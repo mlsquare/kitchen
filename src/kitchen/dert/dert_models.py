@@ -488,7 +488,6 @@ class CombinedModel(FeatureDrivenModel):
         pred = self.label_model.predict(x_f)
         label = [np.argmax(pred[0])]
         index = 1
-        print(self.paths_maxlen)
         while cont & (index < self.paths_maxlen):
             pred = self.combined_model.predict([x_latent, x_path])
             char_index = np.argmax(pred[0])
