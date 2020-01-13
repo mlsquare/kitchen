@@ -24,6 +24,7 @@ class FeatureDrivenModel():
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=0.6, shuffle=True)
         clf.fit(X_train, y_train)
+        self.clf = clf #Temporary, remove after use!!!
         left_nodes = clf.tree_.children_left[clf.tree_.children_left > 0]
         right_nodes = clf.tree_.children_right[clf.tree_.children_right > 0]
         cutpoints = np.around(clf.tree_.threshold, 1)[
@@ -497,23 +498,111 @@ class CombinedModel(FeatureDrivenModel):
             index += 1
             if next_char == 'E':
                 cont = False
-            elif index == self.paths_maxlen - 1:
-                path.append('E')
+            # elif index == self.paths_maxlen - 1:
+            #     path.append('E')
+
+        if path[-1] != 'E':
+            path.append('E')
 
         return [path, label]
+
+    def check_path(self, path): # Returns -1 if path traversed is wrong/non-existant
+        path = ''.join(path)
+        path = path[1:-1]
+        pred_features = []
+        path_as_strings = []
+        for i in range(len(path)):
+            if i%2 == 0:
+                pred_features.append(int(path[i]))
+            else:
+                path_as_strings.append(path[i])
+
+        n_nodes = self.clf.tree_.node_count
+        children_left = self.clf.tree_.children_left
+        children_right = self.clf.tree_.children_right
+        feature = self.clf.tree_.feature
+
+        is_leaves = np.zeros(shape=n_nodes, dtype=bool)
+        stack = [(0, -1)]
+        while len(stack) > 0:
+            node_id, parent_depth = stack.pop()
+            # node_depth[node_id] = parent_depth + 1
+
+            if (children_left[node_id] != children_right[node_id]):
+                stack.append((children_left[node_id], parent_depth + 1))
+                stack.append((children_right[node_id], parent_depth + 1))
+            else:
+                is_leaves[node_id] = True
+                
+
+        node = 0
+        pred_target = -1
+        for i in range(len(path_as_strings)):
+            if path_as_strings[i] == 'L':
+                if feature[node]+1 == pred_features[i]:
+                    node = children_left[node]
+                else:
+                    pred_target = -1 # Remove for "subset" checks
+                    break
+            elif path_as_strings[i] == 'R':
+                if feature[node]+1 == pred_features[i]:
+                    node = children_right[node]
+                else:
+                    pred_target = -1 # Remove for "subset" checks
+                    break
+            if is_leaves[node]:
+                for i, x in enumerate(self.clf.tree_.value[node][0]):
+                    if x > 0:
+                        pred_target = i
+
+        return pred_target
 
 
     def score(self):
         count = []
         bleu_score = []
+        j_coeff = []
+        l_dist = []
+        path_mismatch_count = []
+        traverse_check_count = []
         for i in range(self.df.shape[0]):
             curr_feat = np.array([self.df.iloc[i, 0:4]])
             path, label = self.predict(curr_feat)
+            actual_path = self.df.iloc[i, 8]
+
+            actual_path_tok = [self.char_indices[char] for char in actual_path]
+            pred_path_tok = [self.char_indices[char] for char in path]
+
+            j_coeff.append(super().get_j_coeff(actual_path_tok, pred_path_tok))
+
             print('actual vs predicted: ', self.df.iloc[i, 8], ' vs ', ' '.join(
                 path), 'labels: ', self.df.iloc[i, 5], label[0])
             count.append(self.df.iloc[i, 5] == label[0])
+            # print('Actual path -- ', actual_path)
+            # print('Pred path -- ', path)
+            if actual_path != path:
+                print(' -- Path mismatch -- ')
+                path_mismatch_count.append(1)
+                pred_target = self.check_path(path)
+                if pred_target != -1:
+                    traverse_check_count.append(1)
+
+
             path = list(''.join(path))
             actual_path = list(''.join(self.df.iloc[i, 8]))
             bleu_score.append(sentence_bleu([actual_path], path))
 
+            lev_path = []
+            for i in range(len(path)):
+                if i in ['S','L','R','E']:
+                    lev_path.append(i)
+            l_dist.append(distance.levenshtein(
+                self.df.iloc[i, 4].replace(' ', ''), ''.join(lev_path)))
+
+
+        print('\nLabel accuracy - ', np.mean(count))
+        print('Path metric (Jaccard) - ', np.mean(j_coeff))
+        print('Path metric (Levenshtein) - ', np.mean(l_dist))
+        print('Path mismatch count - ', np.sum(path_mismatch_count))
+        print('Right traverse count - ', np.sum(traverse_check_count))
         print('Bleu score of paths - ', np.mean(bleu_score))
