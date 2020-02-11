@@ -79,9 +79,10 @@ class FeatureDrivenModel():
         X_new = np.hstack((X, paths_as_string.reshape(-1, 1)))
         # path_sequence = X_new[:, 4]
         data = pd.DataFrame(X_new)
-        data[5] = y
-        data[6] = np.array(decision_features_list)
-        data[7] = np.array(cutpoints_list)
+        self.data = data
+        data[data.shape[1]] = y
+        data[data.shape[1]] = np.array(decision_features_list)
+        data[data.shape[1]] = np.array(cutpoints_list)
         df = data.sample(frac=1).reset_index(drop=True)
         self.df = df
 
@@ -132,8 +133,8 @@ class FeatureDrivenModel():
         self.path_latent_input = np.zeros(
             (len(input_path_sequence), self.feature_size), dtype=np.float)
 
-        self.decision_feature_latent_input = np.zeros(
-            (len(decision_feature_sequence), self.feature_size), dtype=np.float)
+        # self.decision_feature_latent_input = np.zeros(
+        #     (len(decision_feature_sequence), self.feature_size), dtype=np.float)
 
         self.decoder_input = np.zeros(
             (len(extended_feature_sequence), self.decision_features_maxlen, self.decision_feature_vocab_size), dtype=np.bool)
@@ -149,15 +150,16 @@ class FeatureDrivenModel():
             self.y_path[i, self.char_indices[next_chars[i]]] = 1
             self.path_latent_input[i, :] = features[i]
 
-        for i, feat in enumerate(decision_feature_sequence):
-            for t, val in enumerate(feat):
-                self.x_decision_features[i, t, val] = 1
-            self.y_decision_feature[i, next_decision_feature[i]] = 1
-            self.decision_feature_latent_input[i, :] = features[i]
+        # for i, feat in enumerate(decision_feature_sequence):
+        #     for t, val in enumerate(feat):
+        #         self.x_decision_features[i, t, val] = 1
+        #     self.y_decision_feature[i, next_decision_feature[i]] = 1
+            # print(features)
+            # self.decision_feature_latent_input[i, :] = features[i]
 
-        for i, feat in enumerate(extended_feature_sequence):
-            for t, val in enumerate(feat):
-                self.decoder_input[i, t, val] = 1
+        # for i, feat in enumerate(extended_feature_sequence):
+        #     for t, val in enumerate(feat):
+        #         self.decoder_input[i, t, val] = 1
 
     def create_model(self, **kwargs):
         self.path_model = self._create_path_model()
@@ -172,7 +174,7 @@ class FeatureDrivenModel():
                                 name='hidden_x2')(hidden_layer_x1)
         hidden_layer_x3 = Dense(latent_dim, activation='tanh',
                                 name='hidden_x3')(hidden_layer_x2)
-        output_layer = Dense(3, activation='softmax',
+        output_layer = Dense(len(np.unique(self.y)), activation='softmax',
                              name='op_x')(hidden_layer_x3)
         model = Model(input_layer, output_layer)
         return model
@@ -366,7 +368,7 @@ class CombinedModel(FeatureDrivenModel):
         super().transform_data(X, y)
         combined_list = []
 
-        for i, j in enumerate(self.df.iloc[:,4]):
+        for i, j in enumerate(self.df.iloc[:,X.shape[1]]):
             char_list = []
             for index, char in enumerate(j.split()):
                 if char == 'S':
@@ -377,10 +379,12 @@ class CombinedModel(FeatureDrivenModel):
                     # char_list.append((df.iloc[i,6][index], char)) # tuple option (4,R)
                     # char_list.append(df.iloc[i,6][index]) # int and char -- 4, R
                     # char_list.append(char)
-                    char_list.append(str(self.df.iloc[i,6][index]) + char) # combined char '4R'
+                    char_list.append(str(self.df.iloc[i,X.shape[1]+2][index]) + char) # combined char '4R'
             combined_list.append(char_list)
 
-        self.df[8] = combined_list
+        # print("Combined list -- ",combined_list)
+        
+        self.df[self.df.shape[1]] = combined_list
 
         chars = ['S', 'E']
         i=0
@@ -400,8 +404,8 @@ class CombinedModel(FeatureDrivenModel):
 
         for i in range(0, len(self.df)):
             # get the feature
-            curr_feat = np.array([self.df.iloc[i, 0:4]])
-            curr_path = self.df.iloc[i, 8]
+            curr_feat = np.array([self.df.iloc[i, 0:X.shape[1]]])
+            curr_path = self.df.iloc[i, -1]
             curr_path_len = len(curr_path)
             # curr_label = y[i]
             # curr_dec_feat = df.iloc[i, 6]
@@ -419,6 +423,8 @@ class CombinedModel(FeatureDrivenModel):
         self.y_path = np.zeros(
             (len(input_path_sequence), self.path_vocab_size), dtype=np.bool)
 
+        print(input_path_sequence)
+        print(len(input_path_sequence))
         for i, sentence in enumerate(input_path_sequence):
             for t, char in enumerate(sentence):
                 self.x_path[i, t, self.char_indices[char]] = 1
@@ -464,7 +470,7 @@ class CombinedModel(FeatureDrivenModel):
         self.label_model.compile(
             optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
         self.label_model.fit(
-            self.X, y_cat, batch_size=20, epochs=200, verbose=0, shuffle=True, validation_split=0.2)
+            self.X, y_cat, batch_size=200, epochs=2, verbose=1, shuffle=True, validation_split=0.2)
 
         x_latent = super().get_hidden_x(
             self.path_latent_input, model=self.label_model)
@@ -472,7 +478,7 @@ class CombinedModel(FeatureDrivenModel):
         self.combined_model.compile(
             optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
         self.combined_model.fit([x_latent, self.x_path], self.y_path,
-                               batch_size=20, epochs=200, verbose=0, shuffle=True, validation_split=0.2)
+                               batch_size=200, epochs=2, verbose=1, shuffle=True)
 
 
     def predict(self, x):
@@ -506,16 +512,21 @@ class CombinedModel(FeatureDrivenModel):
 
         return [path, label]
 
-    def check_path(self, path): # Returns -1 if path traversed is wrong/non-existant
-        path = ''.join(path)
+    def check_path(self, path): # Returns -1 if path traversed path is wrong/non-existant
+        # path = ''.join(path)
         path = path[1:-1]
         pred_features = []
         path_as_strings = []
         for i in range(len(path)):
-            if i%2 == 0:
-                pred_features.append(int(path[i]))
-            else:
-                path_as_strings.append(path[i])
+            pred_features.append(int(path[i][:-1]))
+            path_as_strings.append(path[i][-1])
+            # if i%2 == 0:
+            #     print('i -- ', i)
+            #     print('path -- ', path)
+            #     print('path[i] -- ', path[i])
+            #     pred_features.append(int(path[i]))
+            # else:
+            #     path_as_strings.append(path[i])
 
         n_nodes = self.clf.tree_.node_count
         children_left = self.clf.tree_.children_left
@@ -537,25 +548,28 @@ class CombinedModel(FeatureDrivenModel):
 
         node = 0
         pred_target = -1
+        subset_path = False
         for i in range(len(path_as_strings)):
             if path_as_strings[i] == 'L':
                 if feature[node]+1 == pred_features[i]:
                     node = children_left[node]
-                else:
-                    pred_target = -1 # Remove for "subset" checks
-                    break
+                # else:
+                    # pred_target = -1 # Remove for "subset" checks
+                    # break
             elif path_as_strings[i] == 'R':
                 if feature[node]+1 == pred_features[i]:
                     node = children_right[node]
-                else:
-                    pred_target = -1 # Remove for "subset" checks
-                    break
+                # else:
+                    # pred_target = -1 # Remove for "subset" checks
+                    # break
             if is_leaves[node]:
                 for i, x in enumerate(self.clf.tree_.value[node][0]):
                     if x > 0:
                         pred_target = i
+                if i < len(path_as_strings):
+                    subset_path = True
 
-        return pred_target
+        return pred_target, subset_path
 
 
     def score(self):
@@ -565,31 +579,38 @@ class CombinedModel(FeatureDrivenModel):
         l_dist = []
         path_mismatch_count = []
         traverse_check_count = []
+        order_mismatch_count = []
+        subset_path_count = []
         for i in range(self.df.shape[0]):
-            curr_feat = np.array([self.df.iloc[i, 0:4]])
+            curr_feat = np.array([self.df.iloc[i, 0:self.X.shape[1]]])
             path, label = self.predict(curr_feat)
-            actual_path = self.df.iloc[i, 8]
+            actual_path = self.df.iloc[i, -1]
 
             actual_path_tok = [self.char_indices[char] for char in actual_path]
             pred_path_tok = [self.char_indices[char] for char in path]
 
             j_coeff.append(super().get_j_coeff(actual_path_tok, pred_path_tok))
 
-            print('actual vs predicted: ', self.df.iloc[i, 8], ' vs ', ' '.join(
-                path), 'labels: ', self.df.iloc[i, 5], label[0])
-            count.append(self.df.iloc[i, 5] == label[0])
+            print('actual vs predicted: ', self.df.iloc[i, -1], ' vs ', ' '.join(
+                path), 'labels: ', self.df.iloc[i, self.X.shape[1]+1], label[0])
+            count.append(self.df.iloc[i, self.X.shape[1]+1] == label[0])
             # print('Actual path -- ', actual_path)
             # print('Pred path -- ', path)
             if actual_path != path:
                 print(' -- Path mismatch -- ')
-                path_mismatch_count.append(1)
-                pred_target = self.check_path(path)
-                if pred_target != -1:
-                    traverse_check_count.append(1)
+                if sorted(actual_path) == sorted(path):
+                    print(' -- Order mismatch -- ')
+                    order_mismatch_count.append(1)
+                else:
+                    path_mismatch_count.append(1)
+                    pred_target, subset_path = self.check_path(path)
+                    subset_path_count.append(subset_path)
+                    if pred_target != -1 and pred_target == self.df.iloc[i, self.X.shape[1]+1]:
+                        traverse_check_count.append(1)
 
 
             path = list(''.join(path))
-            actual_path = list(''.join(self.df.iloc[i, 8]))
+            actual_path = list(''.join(self.df.iloc[i, -1]))
             bleu_score.append(sentence_bleu([actual_path], path))
 
             lev_path = []
@@ -597,7 +618,7 @@ class CombinedModel(FeatureDrivenModel):
                 if i in ['S','L','R','E']:
                     lev_path.append(i)
             l_dist.append(distance.levenshtein(
-                self.df.iloc[i, 4].replace(' ', ''), ''.join(lev_path)))
+                self.df.iloc[i, self.X.shape[1]].replace(' ', ''), ''.join(lev_path)))
 
 
         print('\nLabel accuracy - ', np.mean(count))
@@ -605,4 +626,6 @@ class CombinedModel(FeatureDrivenModel):
         print('Path metric (Levenshtein) - ', np.mean(l_dist))
         print('Path mismatch count - ', np.sum(path_mismatch_count))
         print('Right traverse count - ', np.sum(traverse_check_count))
+        print('Order mismatch count - ', np.sum(order_mismatch_count))
+        print('Subset path count - ', np.sum(subset_path_count))
         print('Bleu score of paths - ', np.mean(bleu_score))
