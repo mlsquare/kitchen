@@ -1,0 +1,231 @@
+---
+title: "DeRT trials on adult income dataset"
+output: html_notebook
+---
+
+```{r Import adult income dataset}
+adult_dataset <- read.csv("../../data/raw/adult.data.csv", header = FALSE)
+col_names <- c('age', 'workclass', 'fnlwgt', 'education', 'education-num',
+         'marital-status', 'occupation', 'relationship', 'race', 'sex', 'capital-gain', 'capital-loss',
+         'hours-per-week', 'native-country', 'target')
+colnames(adult_dataset) <- col_names
+
+adult_dataset = adult_dataset[adult_dataset["workclass"] != " ?",]
+adult_dataset = adult_dataset[adult_dataset["occupation"] != " ?",]
+adult_dataset = adult_dataset[adult_dataset$`native-country` != " ?",]
+
+
+
+# names = ['age', 'workclass', 'fnlwgt', 'education', 'education-num',
+#          'marital-status', 'occupation', 'relationship', 'race', 'sex', 'capital-gain', 'capital-loss', 
+#          'hours-per-week', 'native-country', 'target']
+```
+
+```{r Train using rpart tree}
+set.seed(123)
+# tree <- rpart(Species ~ ., data = iris, control = rpart.control(cp = 0.0001))
+tree <- rpart(target ~ ., data = adult_dataset[1:10000,], minsplit=1,cp=0)
+
+printcp(tree)
+
+```
+
+
+```{r Prepare cat variable bins}
+cat_var = c("workclass", "education", "marital-status", 'occupation', 'relationship', 'race', 'sex', 'native-country')
+max_cat <- max(tree$splits[names(tree$splits[,4]) %in% cat_var,2])
+categories <- c(1:max_cat)
+set1 <- tbl_df(data.frame(t(combn(categories, 1)), stringsAsFactors = FALSE))
+names(set1) <- "new_col"
+# set2 <- unite(data.frame(t(combn(categories, 2))), "new_col", sep = "")
+# set3 <- unite(data.frame(t(combn(categories, 3))), "new_col", sep = "")
+
+# cat_bind <- rbind(set1, set2)
+cat_bind <- set1
+
+
+itx <- iter(cat_bind[[1]], by = "row")
+
+cat_bind <- foreach(i = itx, j=icount(), .combine = "c") %do% {
+  val <- paste("(", cat_bind[[1]][j], ")",sep = "")
+  val
+}
+
+cat_bind <- data.frame(cat_bind, stringsAsFactors = FALSE)
+names(cat_bind) <- "new_col"
+cat_bind
+```
+
+
+```{r generate bin_list}
+cat_var = c("workclass", "education", "marital-status", 'occupation', 'relationship', 'race', 'sex', 'native-country')
+bin_boundaries <- tree$splits[!names(tree$splits[,4]) %in% cat_var,4]
+cat_bin_boundaries <- tree$splits[names(tree$splits[,4]) %in% cat_var,4]
+# bin_boundaries <- tree$splits[,4]
+bin_df <- data.frame(sort(unique(bin_boundaries)))
+names(bin_df) <- "new_col"
+bin_df <- rbind(bin_df, cat_bind)
+# bin_df <- rbind(bin_df, cat_bind) # for cat_var
+
+set1 <- data.frame(LETTERS, stringsAsFactors=FALSE)
+names(set1) <- "new_col"
+set2 <- unite(data.frame(t(combn(LETTERS,2))), "new_col", sep = "")
+set3 <- unite(data.frame(t(combn(LETTERS,3))), "new_col", sep = "")
+bin_labels <- bind_rows(set1, set2, set3)
+
+bin_df = transform(bin_df, new_col = as.character(new_col))
+
+bin_list <- list()
+
+itx <- iter(bin_df[[1]], by = "row")
+bin_list <- foreach(i = itx, j=icount(), .combine = "c") %do% {
+  if ("(" == strsplit(bin_df[[1]][j], split="")[[1]][1]){
+    val <- bin_labels[[1]][j]
+    }
+  else{
+    val <- list(list(bin_labels[[1]][j]))
+    }
+  names(val) <- as.character(i)
+  val
+}
+
+label_list <- list()
+
+itx <- iter(bin_df[[1]], by = "row")
+
+label_list <- foreach(i = itx, j=icount(), .combine = "c") %do% {
+  val <- i
+  names(val) <- bin_labels[[1]][j]
+  val
+}
+```
+
+
+```{r return_path}
+return_path <- function(x){
+  node <- 1
+  nspl <- 1
+  path_list <- list()
+  test_yval <- list()
+  # temp_path <- list()
+  while(nspl != 0){
+    # i <- x
+    # i <- subset(x, select=-c(survived))
+    # i <- subset(x, select=-c(Species))
+    i <- subset(x, select=-c(target))
+    npos <- match(node, nnum)
+    nspl <- nodes[4][npos,] # Recheck
+    var <- vnum[nspl]
+    ncat <- split_df[2][nspl,]
+    temp <- split_df[4][nspl,]
+      if (nspl > 0){
+        if (ncat >= 2){
+          dir = csplit[temp,as.integer(i[var])]
+          # levels <- bin_labels[[1]][length(bin_list)+1]
+          # names(levels) <- as.integer(x[var])
+          # path_list <- c(path_list, bin_list[[1]][-1])
+          label <- ifelse(dir == -1, 0, 1)
+          level <- paste("(", as.character(i[var]), ")", sep = "")
+          node_decision <- paste(as.character(var), bin_list[[level]], label, sep = "")
+          # path_list <- c(path_list, var,bin_list[[level]])
+          path_list <- c(path_list, node_decision)
+          # print(level)
+          # print(dir)
+        }
+        else if (i[var] < temp){
+          # label <- ifelse(ncat==-1, bin_list[[as.character(temp)]][1], bin_list[[as.character(temp)]][2]) # Validate results!
+          label <- bin_list[[as.character(temp)]][1]
+          node_decision <- paste(as.character(var), label, 0, sep = "")
+          # print(label)
+          # path_list <- c(path_list, var,label)
+          path_list <- c(path_list, node_decision)
+          dir = ncat
+          # print(dir)
+        }
+        else {
+          # label <- ifelse(ncat==1, bin_list[[as.character(temp)]][1], bin_list[[as.character(temp)]][2]) # Validate results!
+          label <- bin_list[[as.character(temp)]][1]
+          node_decision <- paste(as.character(var), label, 1, sep = "")
+          # print(label)
+          # path_list <- c(path_list, var,label)
+          path_list <- c(path_list, node_decision)
+          dir = -ncat
+          # print(dir)
+        }
+
+        if (dir == -1){
+          node = 2 * node
+        }
+        else{
+          node = 2 * node + 1
+        }
+      }
+    else{
+      # print("leaf node")
+      # test_yval <- c(test_yval, tree$frame$yval[node])
+    }
+    }
+  path_list = paste(path_list, collapse = ",")
+  names(path_list) <- "new_col"
+  return(path_list)
+}
+```
+
+
+```{r Extract splits and nodes info}
+temp_frame <- tree$frame
+
+nc <- temp_frame[, c("ncompete", "nsurrogate")]
+
+temp_frame$index <- 1L + c(0L, cumsum((temp_frame$var != "<leaf>") + nc[[1L]] + nc[[2L]]))[-(nrow(temp_frame) + 1L)] ## Validate the values!
+
+temp_frame$index[temp_frame$var == "<leaf>"] <- 0L
+
+nodes <- temp_frame[, c("n", "ncompete", "nsurrogate", "index")]
+
+nnum = row.names(temp_frame)
+
+vnum <- match(rownames(tree$splits), colnames(adult_dataset))
+
+split <- tree$splits
+
+split_rownames <- rownames(split)
+
+split_df <- as.data.frame(split, row.names = 0)
+
+csplit <- tree$csplit -2L
+
+```
+
+
+```{r Traverse the tree and generate paths}
+itx <- iter(adult_dataset[1:10000,], by = "row")
+
+# final_paths <- data.frame(matrix(ncol = 1, nrow = nrow(test_data)))
+final_paths <- data.frame(matrix(ncol = 1, nrow = nrow(adult_dataset[1:10000,])))
+colnames(final_paths) <- c("new_col")
+
+# foreach(i = itx, j=icount(), .combine = "c") %do% {
+#     path_list <- return_path(i)
+#     # test_yval <- return_path(i)
+#     print(path_list)
+#     # final_paths <- bind_rows(final_paths, data.frame(path_list))
+#     final_paths[j, ] <- path_list
+#     # final_paths <- unite(final_paths, "new_col", sep=",")
+# }
+
+for (iter_index in 1:10000){
+    path_list <- return_path(adult_dataset[iter_index,])
+    print(path_list)
+    final_paths[iter_index, ] <- path_list
+}
+```
+
+
+
+```{r Export paths and bin labels}
+
+write.csv(final_paths, file="adult_data_paths.csv")
+write.csv(label_list, file="adult_data_bin_labels.csv")
+```
+
