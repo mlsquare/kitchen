@@ -8,6 +8,7 @@ install.packages('foreach')
 install.packages('FNN') # KNN
 install.packages('iterators')
 install.packages('foreach')
+install.packages('gridExtra')
 ```
 
 
@@ -22,6 +23,7 @@ library(foreach)
 # library(class)
 library(FNN)
 data(ptitanic)
+library(gridExtra)
 
 str(ptitanic)
 ```
@@ -32,7 +34,7 @@ str(ptitanic)
 data(iris)
 ```
 
-```{r}
+```{r Global tree}
 # Tree for iris dataset
 
 set.seed(123)
@@ -130,13 +132,6 @@ get_updated_binlist <- function(new_boundaries, bin_list){
 ```
 
 
-```{r}
-install.packages('gridExtra')
-library(gridExtra)
-```
-
-
-
 ```{r Local tree trials}
 itx <- iter(iris[,1:5], by = "row")
 # itx <- iter(k, by = "row")
@@ -171,19 +166,27 @@ set2 <- unite(data.frame(t(combn(LETTERS,2))), "new_col", sep = "")
 set3 <- unite(data.frame(t(combn(LETTERS,3))), "new_col", sep = "")
 bin_labels <- bind_rows(set1, set2, set3)
 
-pdf("test_plot.pdf") #Outside the loop
-
-path.to.root <- function(node){
-  if(node == 1)   # root?
-    node
-  else            # recurse, %/% 2 gives the parent of node
-    c(node, path.to.root(node %/% 2))
-  }
+# pdf("test_plot.pdf") #Outside the loop
+# 
+# path.to.root <- function(node){
+#   if(node == 1)   # root?
+#     node
+#   else            # recurse, %/% 2 gives the parent of node
+#     c(node, path.to.root(node %/% 2))
+#   }
 
 # foreach(i = itx, j=icount(), .combine = "c") %dopar% {
 for (iter_index in 1:dim(iris)[1]) {
     # x <- data.frame(i)
-    x <- data.frame(iris[iter_index,1:5])
+    x <- iris[iter_index, 1:5]
+    x <- x[rep(seq_len(nrow(x)), 25),]
+    x <- x[rowSums(is.na(x)) == 0,]
+    remaining_df <- iris[-c(iter_index),] # exclude current instance!
+    random_sample <- remaining_df[sample(nrow(iris)),]
+    x <- rbind(x, random_sample[1:75,])
+
+    # x <- data.frame(iris[iter_index,1:5])
+    
     # print(i)
     # itx_2 <- iter(i, by = "column")
     # foreach(a=itx_2, b=icount(), .combine = "c") %do% {
@@ -193,10 +196,16 @@ for (iter_index in 1:dim(iris)[1]) {
     #   print('loop entered')
     #   x <- rbind(x, random_sample[a,])
     # }
-    random_sample <- iris[sample(nrow(iris)),] # exclude current instance!
-    x <- rbind(x, random_sample[1:9,])
+    
+    # random_sample <- iris[sample(nrow(iris)),] # exclude current instance!
+    # x <- rbind(x, random_sample[1:9,])
+    
     # print(x)
     local_tree <- rpart(Species ~ ., data = x, minsplit=1,cp=0)
+    frame_csv_name <- paste0("local_dt_info/frame", "_", iter_index,".csv")
+    splits_csv_name <- paste0("local_dt_info/splits", "_", iter_index,".csv")
+    write.csv(local_tree$frame, file=frame_csv_name)
+    write.csv(local_tree$splits, file=splits_csv_name)
     # print(local_tree)
     # For local trees
     cat_var = c("sex", "pclass")
@@ -252,18 +261,18 @@ for (iter_index in 1:dim(iris)[1]) {
     
     #### plot results -- START ####
 
-    node <- as.integer(rpart.predict(global_tree, iris[j,], nn = TRUE)['nn'])
-    nodes <- as.numeric(row.names(global_tree$frame))
-    global_cols <- ifelse(nodes %in% path.to.root(node), "sienna", "gray")
-
-    node <- as.integer(rpart.predict(local_tree, iris[j,], nn = TRUE)['nn'])
-    nodes <- as.numeric(row.names(local_tree$frame))
-    local_cols <- ifelse(nodes %in% path.to.root(node), "sienna", "gray")
-
-    layout(matrix(c(1,2,3,3),nrow = 2, byrow=TRUE))
-    test_plot = prp(tree, nn=TRUE, col=global_cols, branch.col=global_cols, split.col=global_cols, nn.col=global_cols, compress = FALSE)       #Global tree
-    test_plot = prp(tree, nn=TRUE, col=local_cols, branch.col=local_cols, split.col=local_cols, nn.col=local_cols, compress = FALSE)           #Local tree
-    grid.table(iris[j,])
+    # node <- as.integer(rpart.predict(global_tree, iris[j,], nn = TRUE)['nn'])
+    # nodes <- as.numeric(row.names(global_tree$frame))
+    # global_cols <- ifelse(nodes %in% path.to.root(node), "sienna", "gray")
+    # 
+    # node <- as.integer(rpart.predict(local_tree, iris[j,], nn = TRUE)['nn'])
+    # nodes <- as.numeric(row.names(local_tree$frame))
+    # local_cols <- ifelse(nodes %in% path.to.root(node), "sienna", "gray")
+    # 
+    # layout(matrix(c(1,2,3,3),nrow = 2, byrow=TRUE))
+    # test_plot = prp(tree, nn=TRUE, col=global_cols, branch.col=global_cols, split.col=global_cols, nn.col=global_cols, compress = FALSE)       #Global tree
+    # test_plot = prp(tree, nn=TRUE, col=local_cols, branch.col=local_cols, split.col=local_cols, nn.col=local_cols, compress = FALSE)           #Local tree
+    # grid.table(iris[j,])
 
     #### Plot results -- END ####
 
@@ -306,7 +315,7 @@ for (iter_index in 1:dim(iris)[1]) {
     # cutpoints[j, ] <- path_list
 }
 
-dev.off() #Outside the loop
+# dev.off() #Outside the loop
 ```
 
 
@@ -364,32 +373,8 @@ for (i in 1: length(bin_df[[1]])){
 }
 ```
 
-```{Generate plots for comparison(Global vs local) r}
+```{r Generate plots for comparison(Global vs local)}
 itx <- iter(iris[,1:5], by = "row")
-# final_paths <- data.frame(matrix(ncol = 1, nrow = nrow(iris)))
-# 
-# set1 <- data.frame(LETTERS, stringsAsFactors=FALSE)
-# names(set1) <- "new_col"
-# set2 <- unite(data.frame(t(combn(LETTERS,2))), "new_col", sep = "")
-# set3 <- unite(data.frame(t(combn(LETTERS,3))), "new_col", sep = "")
-# bin_labels <- bind_rows(set1, set2, set3)
-# 
-# bin_tracker <- 1
-# label_tracker <- 1
-# bin_list <- list()
-# bin_df <- data.frame()
-
-
-## changes to fix memory issues
-# 1) Move bin creation to a function - bin_df, bin_list. Check for duplicates and return updated list.
-# 2) Move bin_labels out of loops
-
-
-# set1 <- data.frame(LETTERS, stringsAsFactors=FALSE)
-# names(set1) <- "new_col"
-# set2 <- unite(data.frame(t(combn(LETTERS,2))), "new_col", sep = "")
-# set3 <- unite(data.frame(t(combn(LETTERS,3))), "new_col", sep = "")
-# bin_labels <- bind_rows(set1, set2, set3)
 
 pdf("test_plot.pdf") #Outside the loop
 
@@ -402,23 +387,18 @@ path.to.root <- function(node){
 
 # foreach(i = itx, j=icount(), .combine = "c") %dopar% {
 for (iter_index in 1:dim(iris)[1]) {
+# for (iter_index in 1){
     # x <- data.frame(i)
     # x <- data.frame(iris[iter_index,1:5])
     x <- iris[iter_index, 1:5]
-    random_sample <- iris[sample(nrow(iris)),] # exclude current instance!
-    x <- rbind(x, random_sample[1:9,])
+    x <- x[rep(seq_len(nrow(x)), 25),]
+    x <- x[rowSums(is.na(x)) == 0,]
+    remaining_df <- iris[-c(iter_index),] # exclude current instance!
+    random_sample <- remaining_df[sample(nrow(iris)),]
+    x <- rbind(x, random_sample[1:75,])
     # print(x)
-    local_tree <- rpart(Species ~ ., data = x, minsplit=1,cp=0)
-    # global_tree <- rpart(Species ~ ., data = iris, minsplit=1,cp=0)
-    # print(local_tree)
-    # For local trees
-    # cat_var = c("sex", "pclass")
-    # bin_boundaries <- local_tree$splits[!names(local_tree$splits[,4]) %in% cat_var,4]
-    # bin_df <- data.frame(sort(unique(bin_boundaries)))
-    # 
-    # names(bin_df) <- "new_col"
-    # 
-    # bin_list <- get_updated_binlist(bin_df, bin_list)
+    ctrl <- rpart.control(maxdepth=2)
+    local_tree <- rpart(Species ~ ., data = x, minsplit=1,cp=0 ,control=ctrl)
     
     #### plot results -- START ####
 
@@ -430,37 +410,17 @@ for (iter_index in 1:dim(iris)[1]) {
     nodes <- as.numeric(row.names(local_tree$frame))
     local_cols <- ifelse(nodes %in% path.to.root(node), "sienna", "gray")
 
-    layout(matrix(c(1,2,3,3),nrow = 2, byrow=TRUE))
-    test_plot = prp(global_tree, nn=TRUE, col=global_cols, branch.col=global_cols, split.col=global_cols, nn.col=global_cols, compress = FALSE)       #Global tree
-    test_plot = prp(local_tree, nn=TRUE, col=local_cols, branch.col=local_cols, split.col=local_cols, nn.col=local_cols, compress = FALSE)           #Local tree
-    grid.table(iris[iter_index,])
+    # layout(matrix(c(1,2,3,3,4,4,4),nrow = 3, byrow=TRUE))
+    # layout(matrix(c(1,2,3,3),nrow = 2, byrow=TRUE))
+    layout(matrix(c(1,2,3,3,4,4),3,2, byrow=TRUE))
+    test_plot = prp(global_tree, nn=TRUE, col=global_cols, branch.col=global_cols, split.col=global_cols, nn.col=global_cols, compress = FALSE, extra=109)       #Global tree
+    test_plot = prp(local_tree, nn=TRUE, col=local_cols, branch.col=local_cols, split.col=local_cols, nn.col=local_cols, compress = FALSE, extra=109)           #Local tree
+    table_1 <- grid.table(iris[iter_index,])
+    grid.newpage()
+    table_2 <- grid.table(t(as.data.frame(table(x[, 5]))))
+    # grid.arrange(table_1, table_2, nrow=2)
 
     #### Plot results -- END ####
-
-    # temp_frame <- local_tree$frame
-    # 
-    # nc <- temp_frame[, c("ncompete", "nsurrogate")]
-    # 
-    # temp_frame$index <- 1L + c(0L, cumsum((temp_frame$var != "<leaf>") + nc[[1L]] + nc[[2L]]))[-(nrow(temp_frame) + 1L)] ## Validate the values!
-    # 
-    # temp_frame$index[temp_frame$var == "<leaf>"] <- 0L
-    # 
-    # nodes <- temp_frame[, c("n", "ncompete", "nsurrogate", "index")]
-    # 
-    # nnum = row.names(temp_frame)
-    # 
-    # vnum <- match(rownames(local_tree$splits), colnames(iris[1,]))
-    # 
-    # split <- local_tree$splits
-    # 
-    # split_rownames <- rownames(split)
-    # 
-    # split_df <- as.data.frame(split, row.names = 0)
-    # 
-    # csplit <- local_tree$csplit -2L
-    # 
-    # path_list <- return_path(iris[iter_index,1:5])
-    # final_paths[iter_index, ] <- path_list
 }
 
 dev.off() #Outside the loop

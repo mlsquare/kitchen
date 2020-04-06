@@ -1,0 +1,27 @@
+{
+    "root": "/home/shakkeel/Desktop/mlsquare-playground/kitchen",
+    "program": "<python with no main file>",
+    "git": {
+        "remote": "git@github.com:mlsquare/kitchen.git",
+        "commit": "576aaf1a00dead7f84005e73aa68cc82927a7595"
+    },
+    "email": "shakkeelahammed@gmail.com",
+    "startedAt": "2020-04-03T08:10:25.638996",
+    "host": "shakkeel-TUF-GAMING-FX504GD-FX80GD",
+    "username": "shakkeel",
+    "executable": "/home/shakkeel/anaconda3/envs/test_imly/bin/python",
+    "os": "Linux-4.20.10-042010-generic-x86_64-with-debian-buster-sid",
+    "python": "3.6.8",
+    "cpu_count": 8,
+    "cuda": "10.0.130",
+    "args": [
+        "-f",
+        "/run/user/1000/jupyter/kernel-801dbe0c-64b1-406a-aef3-01faad20c4bd.json"
+    ],
+    "state": "running",
+    "jobType": null,
+    "mode": "run",
+    "name": "glorious-oath-1",
+    "project": "dert",
+    "heartbeatAt": "2020-04-03T08:21:22.002595"
+}
