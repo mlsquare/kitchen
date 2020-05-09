@@ -1,0 +1,74 @@
+Call:
+rpart(formula = class ~ ., data = x, minsplit = 1, minbucket = 1, 
+    cp = 0)
+  n= 100 
+
+           CP nsplit  rel error     xerror       xstd
+1 0.854456505      0 1.00000000 1.00822655 0.14520756
+2 0.127849972      1 0.14554349 0.15158186 0.02338537
+3 0.008846761      2 0.01769352 0.03662795 0.02487565
+4 0.000000000      4 0.00000000 0.05687204 0.03233881
+
+Variable importance
+ petal_width petal_length sepal_length  sepal_width 
+          29           28           23           21 
+
+Node number 1: 100 observations,    complexity param=0.8544565
+  mean=0.45, MSE=0.5275 
+  left son=2 (69 obs) right son=3 (31 obs)
+  Primary splits:
+      petal_length < -0.7150148 to the left,  improve=0.8544565, (0 missing)
+      petal_width  < -0.5914673 to the left,  improve=0.8544565, (0 missing)
+      sepal_length < -0.4765936 to the left,  improve=0.7479267, (0 missing)
+      sepal_width  < 0.2133157  to the right, improve=0.6320166, (0 missing)
+  Surrogate splits:
+      petal_width  < -0.5914673 to the left,  agree=1.00, adj=1.000, (0 split)
+      sepal_length < -0.4765936 to the left,  agree=0.96, adj=0.871, (0 split)
+      sepal_width  < 0.2133157  to the right, agree=0.94, adj=0.806, (0 split)
+
+Node number 2: 69 observations
+  mean=0, MSE=0 
+
+Node number 3: 31 observations,    complexity param=0.12785
+  mean=1.451613, MSE=0.2476587 
+  left son=6 (16 obs) right son=7 (15 obs)
+  Primary splits:
+      petal_width  < 0.7248546  to the left,  improve=0.87843140, (0 missing)
+      petal_length < 0.7343396  to the left,  improve=0.57823130, (0 missing)
+      sepal_length < -0.3554258 to the left,  improve=0.12200440, (0 missing)
+      sepal_width  < -1.398062  to the left,  improve=0.08823529, (0 missing)
+  Surrogate splits:
+      petal_length < 0.5638273  to the left,  agree=0.871, adj=0.733, (0 split)
+      sepal_length < -0.3554258 to the left,  agree=0.613, adj=0.200, (0 split)
+      sepal_width  < -1.052767  to the left,  agree=0.613, adj=0.200, (0 split)
+
+Node number 6: 16 observations
+  mean=1, MSE=0 
+
+Node number 7: 15 observations,    complexity param=0.008846761
+  mean=1.933333, MSE=0.06222222 
+  left son=14 (2 obs) right son=15 (13 obs)
+  Primary splits:
+      sepal_width  < 0.2133157  to the right, improve=0.46428570, (0 missing)
+      sepal_length < 0.1292457  to the left,  improve=0.28571430, (0 missing)
+      petal_length < 0.6206647  to the left,  improve=0.28571430, (0 missing)
+      petal_width  < 0.8564867  to the left,  improve=0.08163265, (0 missing)
+
+Node number 14: 2 observations,    complexity param=0.008846761
+  mean=1.5, MSE=0.25 
+  left son=28 (1 obs) right son=29 (1 obs)
+  Primary splits:
+      sepal_length < 0.2504136  to the left,  improve=1, (0 missing)
+      sepal_width  < 0.5586108  to the left,  improve=1, (0 missing)
+      petal_length < 0.7627583  to the left,  improve=1, (0 missing)
+      petal_width  < 1.119751   to the left,  improve=1, (0 missing)
+
+Node number 15: 13 observations
+  mean=2, MSE=0 
+
+Node number 28: 1 observations
+  mean=1, MSE=0 
+
+Node number 29: 1 observations
+  mean=2, MSE=0 
+

@@ -1,0 +1,49 @@
+Call:
+rpart(formula = class ~ ., data = x, minsplit = 1, minbucket = 1, 
+    cp = 0)
+  n= 100 
+
+         CP nsplit rel error     xerror       xstd
+1 0.8705544      0 1.0000000 1.02042724 0.09439537
+2 0.1294456      1 0.1294456 0.18022565 0.04178803
+3 0.0000000      2 0.0000000 0.02804656 0.01963259
+
+Variable importance
+ petal_width petal_length sepal_length  sepal_width 
+          30           29           21           20 
+
+Node number 1: 100 observations,    complexity param=0.8705544
+  mean=1.37, MSE=0.7131 
+  left son=2 (39 obs) right son=3 (61 obs)
+  Primary splits:
+      petal_width  < 0.5932224   to the left,  improve=0.8705544, (0 missing)
+      petal_length < 0.393315    to the left,  improve=0.8316065, (0 missing)
+      sepal_length < -0.11309    to the left,  improve=0.7296007, (0 missing)
+      sepal_width  < -0.7074714  to the right, improve=0.5322741, (0 missing)
+  Surrogate splits:
+      petal_length < 0.592246    to the left,  agree=0.98, adj=0.949, (0 split)
+      sepal_length < -0.11309    to the left,  agree=0.88, adj=0.692, (0 split)
+      sepal_width  < -0.7074714  to the right, agree=0.86, adj=0.641, (0 split)
+
+Node number 2: 39 observations,    complexity param=0.1294456
+  mean=0.3846154, MSE=0.2366864 
+  left son=4 (24 obs) right son=5 (15 obs)
+  Primary splits:
+      petal_length < -0.5445025  to the left,  improve=1.0000000, (0 missing)
+      petal_width  < -0.6572834  to the left,  improve=1.0000000, (0 missing)
+      sepal_width  < -0.0168811  to the right, improve=0.6136111, (0 missing)
+      sepal_length < 0.008077858 to the left,  improve=0.5517241, (0 missing)
+  Surrogate splits:
+      petal_width  < -0.6572834  to the left,  agree=1.000, adj=1.000, (0 split)
+      sepal_width  < -0.0168811  to the right, agree=0.897, adj=0.733, (0 split)
+      sepal_length < -0.4765936  to the left,  agree=0.872, adj=0.667, (0 split)
+
+Node number 3: 61 observations
+  mean=2, MSE=0 
+
+Node number 4: 24 observations
+  mean=0, MSE=0 
+
+Node number 5: 15 observations
+  mean=1, MSE=0 
+

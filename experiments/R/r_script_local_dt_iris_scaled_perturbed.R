@@ -1,0 +1,184 @@
+library(tidyr)
+library(dplyr)
+library(hash)
+library(rpart)
+library("rpart.plot")
+
+set.seed(42) 
+
+## Load dataset
+iris_dataset <- read.csv("../Data/iris_with_paths.csv", header = TRUE)
+iris_dataset <- iris_dataset[-7]
+col_names <- c('instance','sepal_length','sepal_width','petal_length','petal_width','class')
+colnames(iris_dataset) <- col_names
+iris_dataset_p <- read.csv("../Data/iris_perturbed.csv", header = TRUE)
+iris_dataset_p <- iris_dataset_p[-7]
+colnames(iris_dataset_p) <- col_names
+
+iris_dataset[,1] = iris_dataset[,1] +1
+
+## Traversing tree using an instance from input data(x)
+return_path <- function(x){
+  node <- 1
+  nspl <- 1
+  path_list <- list()
+  test_yval <- list()
+  while(nspl != 0){
+    i <- subset(x, select=-c(class))
+    npos <- match(node, nnum)
+    nspl <- nodes[4][npos,] # Recheck
+    var <- vnum[nspl]
+    ncat <- split_df[2][nspl,]
+    temp <- split_df[4][nspl,]
+    if (nspl > 0){
+      if (ncat >= 2){
+        dir = csplit[temp,as.integer(i[var])]
+        label <- ifelse(dir == -1, 0, 1)
+        level <- paste("(", as.character(i[var]), ")", sep = "")
+        if (!(level %in% keys(invert(global_bins)))){
+          .set(global_bins, keys=bin_labels$new_col[length(global_bins)+1], values=level)
+        }
+        
+        node_decision <- paste(as.character(var), invert(global_bins)[[level]], label, sep = "")
+        path_list <- c(path_list, node_decision)
+      }
+      else if (i[var] < temp){
+        if (!(as.character(temp) %in% keys(invert(global_bins)))){
+          .set(global_bins, keys=bin_labels$new_col[length(global_bins)+1], values=as.character(temp))
+        }
+        label <- invert(global_bins)[[as.character(temp)]]
+        node_decision <- paste(as.character(var), label, 0, sep = "")
+        path_list <- c(path_list, node_decision)
+        dir = ncat
+      }
+      else {
+        if (!(as.character(temp) %in% keys(invert(global_bins)))){
+          .set(global_bins, keys=bin_labels$new_col[length(global_bins)+1], values=as.character(temp))
+        }
+        label <- invert(global_bins)[[as.character(temp)]]
+        node_decision <- paste(as.character(var), label, 1, sep = "")
+        path_list <- c(path_list, node_decision)
+        dir = -ncat
+      }
+      
+      if (dir == -1){
+        node = 2 * node
+      }
+      else{
+        node = 2 * node + 1
+      }
+    }
+    else{
+    }
+  }
+  path_list = paste(path_list, collapse = ",")
+  names(path_list) <- "new_col"
+  return(path_list)
+}
+
+## Local dt and paths list setup
+final_paths <- data.frame(matrix(ncol = 1, nrow = 150)) #normal
+final_paths_p <- data.frame(matrix(ncol = 2, nrow = 150)) #perturbed
+
+set1 <- data.frame(LETTERS, stringsAsFactors=FALSE)
+names(set1) <- "new_col"
+set2 <- unite(data.frame(t(combn(LETTERS,2))), "new_col", sep = "")
+set3 <- unite(data.frame(t(combn(LETTERS,3))), "new_col", sep = "")
+bin_labels <- bind_rows(set1, set2, set3)
+
+global_bins <- hash()
+
+instance_paths <- matrix(ncol = 150, nrow = 150)
+counts <- rep(1L, 150)
+depths <- rep(0L, 150)
+predictions <- rep(0L, 150)
+
+for (iter_index in 1:150) {
+  print(iter_index)
+  x <- iris_dataset[iter_index, 1:6]
+  x <- x[rep(seq_len(nrow(x)), 50),]
+  x <- x[rowSums(is.na(x)) == 0,]  
+  x <- rbind(x, iris_dataset %>%
+               slice(-c(iter_index))%>%
+               slice(sample(nrow(iris_dataset)))%>%
+               slice(1:50))
+  instances <- x[,c("instance")]
+  x <- x[,2:6]
+  
+  ## Create local tree and export details as csv
+  local_tree <- rpart(class ~ ., data = x, minsplit=1, minbucket=1, cp=0)
+  
+  png(paste("graphs/tree",iter_index, ".png", sep = ""), width = 1200, height = 750)
+  rpart.plot(local_tree)
+  dev.off()
+  
+  frame_csv_name <- paste0("local_dt_info_iris_scaled/frame", "_", iter_index,".csv")
+  splits_csv_name <- paste0("local_dt_info_iris_scaled/splits", "_", iter_index,".csv")
+  write.csv(local_tree$frame, file=frame_csv_name)
+  write.csv(local_tree$splits, file=splits_csv_name)
+  summary_csv_name <- paste0("summaries/summary", "_", iter_index,".txt")
+  summary(local_tree, file = summary_csv_name)
+  temp_frame <- local_tree$frame
+  
+  nodes <- as.numeric(rownames(temp_frame))
+  depths[iter_index] <- max(rpart:::tree.depth(nodes))
+  
+  nc <- temp_frame[, c("ncompete", "nsurrogate")]
+  
+  temp_frame$index <- 1L + c(0L, cumsum((temp_frame$var != "<leaf>") + nc[[1L]] + nc[[2L]]))[-(nrow(temp_frame) + 1L)] ## Validate the values!
+  
+  temp_frame$index[temp_frame$var == "<leaf>"] <- 0L
+  
+  nodes <- temp_frame[, c("n", "ncompete", "nsurrogate", "index")]
+  
+  nnum = row.names(temp_frame)
+  
+  vnum <- match(rownames(local_tree$splits), colnames(iris_dataset[1,2:6]))
+  
+  split <- local_tree$splits
+  
+  split_rownames <- rownames(split)
+  
+  split_df <- as.data.frame(split, row.names = 0)
+  
+  csplit <- local_tree$csplit -2L
+  
+  path_list <- return_path(iris_dataset[iter_index, 2:6])
+  final_paths[iter_index, ] <- path_list
+  
+  path_list_p <- return_path(iris_dataset_p[iter_index, 2:6])
+  final_paths_p[iter_index, 1] <- path_list
+  final_paths_p[iter_index, 2] <- path_list_p
+  
+  # Secondary instance paths
+  for(row_iter in 51:100){
+    path_list <- return_path(iris_dataset[row_iter, 2:6])
+    instance_paths[instances[row_iter],counts[instances[row_iter]]] <- path_list
+    counts[instances[row_iter]] <- counts[instances[row_iter]] + 1
+  }
+  
+  # Predictions from perturbed data
+  res <- predict(local_tree, iris_dataset_p[iter_index, 2:6], type = "vector")
+  predictions[iter_index] <- res
+}
+
+write.csv(predictions, file="../Outputs/iris_scaled_local_perturbed_predictions_100.csv", row.names = FALSE)
+write.csv(depths, file="../Outputs/iris_scaled_local_depths_100.csv", row.names = FALSE)
+
+## Paths per instance
+instance_paths_df <- data.frame(t(instance_paths))
+write.csv(instance_paths_df, file="../Outputs/iris_scaled_local_paths_per_instance_100.csv")
+
+## Export paths and bin details
+col_headings <- c('paths')
+names(final_paths) <- col_headings
+write.csv(final_paths, file="../Outputs/iris_scaled_local_paths_100.csv", row.names = FALSE)
+
+col_headings <- c('original','perturbed')
+names(final_paths_p) <- col_headings
+write.csv(final_paths_p, file="../Outputs/iris_scaled_perturbed_local_paths_100.csv", row.names = FALSE)
+
+label_df <- data.frame(values(global_bins))
+col_headings <- c('bin-value')
+names(label_df) <- col_headings
+write.csv(label_df, file="../Outputs/iris_scaled_local_bin_labels_100.csv")

@@ -1,0 +1,101 @@
+Call:
+rpart(formula = class ~ ., data = x, minsplit = 1, minbucket = 1, 
+    cp = 0)
+  n= 100 
+
+           CP nsplit  rel error     xerror       xstd
+1 0.880726484      0 1.00000000 1.02126210 0.10778254
+2 0.080349758      1 0.11927352 0.12887553 0.02127947
+3 0.015291476      2 0.03892376 0.08638761 0.03249180
+4 0.009730940      3 0.02363228 0.07504589 0.03177551
+5 0.006950671      4 0.01390134 0.07403621 0.03178921
+6 0.000000000      6 0.00000000 0.07298205 0.03181214
+
+Variable importance
+petal_length  petal_width sepal_length  sepal_width 
+          28           28           25           18 
+
+Node number 1: 100 observations,    complexity param=0.8807265
+  mean=0.57, MSE=0.6851 
+  left son=2 (65 obs) right son=3 (35 obs)
+  Primary splits:
+      petal_length < -0.6865961 to the left,  improve=0.8807265, (0 missing)
+      petal_width  < -0.6572834 to the left,  improve=0.8807265, (0 missing)
+      sepal_length < -0.3554258 to the left,  improve=0.8104882, (0 missing)
+      sepal_width  < 0.4435124  to the right, improve=0.4784064, (0 missing)
+  Surrogate splits:
+      petal_width  < -0.6572834 to the left,  agree=1.00, adj=1.000, (0 split)
+      sepal_length < -0.4765936 to the left,  agree=0.97, adj=0.914, (0 split)
+      sepal_width  < 0.4435124  to the right, agree=0.89, adj=0.686, (0 split)
+
+Node number 2: 65 observations
+  mean=0, MSE=0 
+
+Node number 3: 35 observations,    complexity param=0.08034976
+  mean=1.628571, MSE=0.2334694 
+  left son=6 (14 obs) right son=7 (21 obs)
+  Primary splits:
+      petal_length < 0.6206647  to the left,  improve=0.6736597, (0 missing)
+      petal_width  < 0.7248546  to the left,  improve=0.6736597, (0 missing)
+      sepal_length < 0.6139172  to the left,  improve=0.2569930, (0 missing)
+      sepal_width  < -1.398062  to the left,  improve=0.1311189, (0 missing)
+  Surrogate splits:
+      petal_width  < 0.5932224  to the left,  agree=0.886, adj=0.714, (0 split)
+      sepal_length < 0.4927493  to the left,  agree=0.800, adj=0.500, (0 split)
+      sepal_width  < -1.398062  to the left,  agree=0.686, adj=0.214, (0 split)
+
+Node number 6: 14 observations,    complexity param=0.01529148
+  mean=1.142857, MSE=0.122449 
+  left son=12 (11 obs) right son=13 (3 obs)
+  Primary splits:
+      petal_width  < 0.5932224  to the left,  improve=0.61111110, (0 missing)
+      sepal_length < -1.082433  to the right, improve=0.46153850, (0 missing)
+      petal_length < 0.393315   to the left,  improve=0.22222220, (0 missing)
+      sepal_width  < -1.398062  to the left,  improve=0.06666667, (0 missing)
+  Surrogate splits:
+      petal_length < 0.5638273  to the left,  agree=0.929, adj=0.667, (0 split)
+
+Node number 7: 21 observations,    complexity param=0.006950671
+  mean=1.952381, MSE=0.04535147 
+  left son=14 (2 obs) right son=15 (19 obs)
+  Primary splits:
+      petal_width  < 0.7248546  to the left,  improve=0.47500000, (0 missing)
+      petal_length < 0.7343396  to the left,  improve=0.21250000, (0 missing)
+      sepal_width  < -0.2470779 to the right, improve=0.04545455, (0 missing)
+      sepal_length < 1.098589   to the left,  improve=0.04545455, (0 missing)
+
+Node number 12: 11 observations
+  mean=1, MSE=0 
+
+Node number 13: 3 observations,    complexity param=0.00973094
+  mean=1.666667, MSE=0.2222222 
+  left son=26 (1 obs) right son=27 (2 obs)
+  Primary splits:
+      sepal_width  < -0.1319795 to the right, improve=1.00, (0 missing)
+      sepal_length < 0.2504136  to the left,  improve=0.25, (0 missing)
+      petal_length < 0.5069898  to the right, improve=0.25, (0 missing)
+      petal_width  < 0.7248546  to the right, improve=0.25, (0 missing)
+
+Node number 14: 2 observations,    complexity param=0.006950671
+  mean=1.5, MSE=0.25 
+  left son=28 (1 obs) right son=29 (1 obs)
+  Primary splits:
+      sepal_length < 0.6139172  to the right, improve=1, (0 missing)
+      sepal_width  < -1.052767  to the right, improve=1, (0 missing)
+      petal_width  < 0.5274063  to the right, improve=1, (0 missing)
+
+Node number 15: 19 observations
+  mean=2, MSE=0 
+
+Node number 26: 1 observations
+  mean=1, MSE=0 
+
+Node number 27: 2 observations
+  mean=2, MSE=0 
+
+Node number 28: 1 observations
+  mean=1, MSE=0 
+
+Node number 29: 1 observations
+  mean=2, MSE=0 
+

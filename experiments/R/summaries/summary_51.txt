@@ -1,0 +1,48 @@
+Call:
+rpart(formula = class ~ ., data = x, minsplit = 1, minbucket = 1, 
+    cp = 0)
+  n= 100 
+
+         CP nsplit rel error     xerror       xstd
+1 0.6154832      0 1.0000000 1.03493564 0.15074150
+2 0.3845168      1 0.3845168 0.63296272 0.09185091
+3 0.0000000      2 0.0000000 0.03128911 0.03113227
+
+Variable importance
+ petal_width petal_length sepal_length  sepal_width 
+          38           36           17           10 
+
+Node number 1: 100 observations,    complexity param=0.6154832
+  mean=1.02, MSE=0.3196 
+  left son=2 (83 obs) right son=3 (17 obs)
+  Primary splits:
+      petal_width  < 0.7248546  to the left,  improve=0.6154832, (0 missing)
+      petal_length < 0.5638273  to the left,  improve=0.5869668, (0 missing)
+      sepal_length < -0.3554258 to the left,  improve=0.5218155, (0 missing)
+      sepal_width  < 0.903906   to the right, improve=0.1269809, (0 missing)
+  Surrogate splits:
+      petal_length < 0.5638273  to the left,  agree=0.99, adj=0.941, (0 split)
+      sepal_length < 1.522676   to the left,  agree=0.86, adj=0.176, (0 split)
+
+Node number 2: 83 observations,    complexity param=0.3845168
+  mean=0.8192771, MSE=0.1480621 
+  left son=4 (15 obs) right son=5 (68 obs)
+  Primary splits:
+      petal_length < -0.6581774 to the left,  improve=1.0000000, (0 missing)
+      petal_width  < -0.5914673 to the left,  improve=1.0000000, (0 missing)
+      sepal_length < -0.3554258 to the left,  improve=0.8564014, (0 missing)
+      sepal_width  < 0.4435124  to the right, improve=0.6210046, (0 missing)
+  Surrogate splits:
+      petal_width  < -0.5914673 to the left,  agree=1.000, adj=1.000, (0 split)
+      sepal_length < -0.8400972 to the left,  agree=0.976, adj=0.867, (0 split)
+      sepal_width  < 0.4435124  to the right, agree=0.940, adj=0.667, (0 split)
+
+Node number 3: 17 observations
+  mean=2, MSE=0 
+
+Node number 4: 15 observations
+  mean=0, MSE=0 
+
+Node number 5: 68 observations
+  mean=1, MSE=0 
+

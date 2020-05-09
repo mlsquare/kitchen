@@ -1,0 +1,49 @@
+Call:
+rpart(formula = class ~ ., data = x, minsplit = 1, minbucket = 1, 
+    cp = 0)
+  n= 100 
+
+         CP nsplit rel error   xerror      xstd
+1 0.8722384      0 1.0000000 1.024141 0.1511358
+2 0.1277616      1 0.1277616 0.139114 0.0229958
+3 0.0000000      2 0.0000000 0.000000 0.0000000
+
+Variable importance
+ petal_width petal_length sepal_length  sepal_width 
+          33           31           22           14 
+
+Node number 1: 100 observations,    complexity param=0.8722384
+  mean=1.57, MSE=0.5451 
+  left son=2 (28 obs) right son=3 (72 obs)
+  Primary splits:
+      petal_width  < 0.5274063  to the left,  improve=0.8722384, (0 missing)
+      petal_length < 0.393315   to the left,  improve=0.8370941, (0 missing)
+      sepal_length < -0.3554258 to the left,  improve=0.6826270, (0 missing)
+      sepal_width  < -0.4772746 to the right, improve=0.4169985, (0 missing)
+  Surrogate splits:
+      petal_length < 0.5638273  to the left,  agree=0.98, adj=0.929, (0 split)
+      sepal_length < -0.3554258 to the left,  agree=0.90, adj=0.643, (0 split)
+      sepal_width  < -0.4772746 to the right, agree=0.82, adj=0.357, (0 split)
+
+Node number 2: 28 observations,    complexity param=0.1277616
+  mean=0.4642857, MSE=0.2487245 
+  left son=4 (15 obs) right son=5 (13 obs)
+  Primary splits:
+      petal_length < -0.800271  to the left,  improve=1.0000000, (0 missing)
+      petal_width  < -0.5914673 to the left,  improve=1.0000000, (0 missing)
+      sepal_width  < 0.2133157  to the right, improve=0.7511111, (0 missing)
+      sepal_length < -0.4765936 to the left,  improve=0.5081131, (0 missing)
+  Surrogate splits:
+      petal_width  < -0.5914673 to the left,  agree=1.000, adj=1.000, (0 split)
+      sepal_width  < 0.2133157  to the right, agree=0.929, adj=0.846, (0 split)
+      sepal_length < -0.4765936 to the left,  agree=0.857, adj=0.692, (0 split)
+
+Node number 3: 72 observations
+  mean=2, MSE=0 
+
+Node number 4: 15 observations
+  mean=0, MSE=0 
+
+Node number 5: 13 observations
+  mean=1, MSE=0 
+
