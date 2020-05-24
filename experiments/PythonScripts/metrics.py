@@ -2,6 +2,8 @@ import numpy as np
 import pandas as pd
 import re
 from statistics import mean
+import json
+import argparse
 
 class Metrics:
 
@@ -20,14 +22,7 @@ class Metrics:
         return len(self.overlap_cache[repr(rule1) + repr(rule2)])
 
     def cover_point(self, rule, x):
-        for predicate in rule:
-            if predicate[2]=='0': 
-                if x[predicate[0]-1] >= predicate[1]:
-                    return False
-            else:
-                if x[predicate[0]-1] < predicate[1]:
-                    return False
-        return True
+        pass
 
     def cover_dataset(self, rule, data):
         covered_points = set()
@@ -39,7 +34,7 @@ class Metrics:
         full_cover = self.cover_dataset(rule, data)
         correct_cover = set()
         for x in full_cover:
-            if labels[x] == label:
+            if self.labels[x] == label:
                 correct_cover.add(x)
         return correct_cover
 
@@ -201,63 +196,116 @@ class Metrics:
                 covers.append(cover/full_cover)
         return covers
 
+class CategoricalMetrics(Metrics):
 
-paths = pd.read_csv('../Outputs/iris_scaled_local_paths_100.csv', header = 0)
-iris = pd.read_csv('../Data/iris_headers.csv', header = 0)
-bins = pd.read_csv('../Outputs/iris_scaled_local_bin_labels_100.csv', header = 0)
-depths = pd.read_csv('../Outputs/iris_scaled_local_depths_100.csv', header = 0)
+    def __init__(self, decision_paths, labels, factors):
+        super().__init__(decision_paths, labels)
+        self.factors = factors
+        self.factor_set = dict([(int(f),i) for i,f in enumerate(factors[0,:])])
 
-# PATHS
+    def cover_point(self, rule, x):
+        for predicate in rule:
+            if predicate[0] in self.factor_set:
+                if not x[predicate[0]-1] == predicate[1]:
+                    return False
+            elif predicate[2]=='0': 
+                if x[predicate[0]-1] >= float(predicate[1]):
+                    return False
+            else:
+                if x[predicate[0]-1] < float(predicate[1]):
+                    return False
+        return True
 
-paths = paths.values
-bin_vals = bins.values
+class NumericMetrics(Metrics):
 
-bin_dict = dict((x[0], float(x[1])) for x in bin_vals)
+    def __init__(self, decision_paths, labels):
+        super().__init__(decision_paths, labels)
 
-regex = re.compile('([1-4])([A-Z]+)([01])', re.I)
+    def cover_point(self, rule, x):
+        for predicate in rule:
+            if predicate[2]=='0': 
+                if x[predicate[0]-1] >= predicate[1]:
+                    return False
+            else:
+                if x[predicate[0]-1] < predicate[1]:
+                    return False
+        return True
+
+def main(dataset):
+
+    # DATASET
+    with open('../Configs/'+dataset+'.json') as config_file:
+        config = json.load(config_file)
+
+    primary_paths = pd.read_csv('../Outputs/'+config['primary_paths'], header = 0)
+    dataset = pd.read_csv('../Data/'+config['data_with_headers'], header = 0)
+    bins = pd.read_csv('../Outputs/'+config['local_bins'], header = 0)
+    depths = pd.read_csv('../Outputs/'+config['tree_depths'], header = 0)
     
-path_list = []
+    # PATHS
 
-for path in paths:
-    nodes = path[0].split(",")
-    newpath = []
-    for node in nodes:
-        matchobj =  re.match(regex, node)
-        newpath.append((int(matchobj.group(1)), bin_dict[matchobj.group(2)], matchobj.group(3)))
-    path_list.append(newpath)
+    primary_paths = primary_paths.values
 
-# DEPTHS
+    bin_vals = bins.values
+    if 'factors' in config:
+        bin_dict = dict((x[0], x[1].replace(')', '').replace('(', '')) for x in bin_vals)
+    else:
+        bin_dict = dict((x[0], x[1]) for x in bin_vals)
 
-depths = depths.values
-depths = depths.flatten()
+    regex = re.compile(config['path_regex'], re.I)
 
-# DATA AND LABELS
+    path_list = []
 
-dataset = iris.values
-X = dataset[:,0:4].astype(float)
-labels = dataset[:,4]
+    for path in primary_paths:
+        nodes = path[0].split(",")
+        newpath = []
+        for node in nodes:
+            matchobj =  re.match(regex, node)
+            newpath.append((int(matchobj.group(1)), bin_dict[matchobj.group(2)], matchobj.group(3)))
+        path_list.append(newpath)
 
-# MAIN
+    # DEPTHS
 
-metrics = Metrics(path_list, labels)
+    depths = depths.values
+    depths = depths.flatten()
 
-print("Decision set size")
-print(metrics.decision_paths_size())
-print("Decision set length")
-print(metrics.decision_paths_length())
-print("Average rule length")
-print(metrics.average_rule_length())
-print("Inter class overlap")
-print(metrics.interclass_overlap(X))
-print("Intra class overlap")
-print(metrics.intraclass_overlap(X))
-print("Total number of classes covered")
-print(metrics.num_classes_covered())
-print("Correct cover")
-print(metrics.total_correct_cover(X))
-print("Incorrect cover")
-print(metrics.total_incorrect_cover(X))
-print("Depths")
-print(depths)
-print("Correct cover")
-print(metrics.total_correct_cover_rule(X))
+    # DATA AND LABELS
+
+    dataset = dataset.values[0:config['sample']]
+    X = dataset[:,0:config['num_features']]
+    labels = dataset[:,config['target_col']-1]
+
+    if 'factors' in config:
+        factors = pd.read_csv('../Outputs/'+config['factors'], header = 0)
+        factors = factors.values
+        metrics = CategoricalMetrics(path_list, labels, factors)
+    else:
+        metrics = NumericMetrics(path_list, labels)
+
+    print("Decision set size")
+    print(metrics.decision_paths_size())
+    print("Decision set length")
+    print(metrics.decision_paths_length())
+    print("Average rule length")
+    print(metrics.average_rule_length())
+    print("Inter class overlap")
+    print(metrics.interclass_overlap(X))
+    print("Intra class overlap")
+    print(metrics.intraclass_overlap(X))
+    print("Total number of classes covered")
+    print(metrics.num_classes_covered())
+    print("Correct cover")
+    print(metrics.total_correct_cover(X))
+    print("Incorrect cover")
+    print(metrics.total_incorrect_cover(X))
+    print("Depths")
+    print(depths)
+    print("Correct cover")
+    print(metrics.total_correct_cover_rule(X))
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description = 'Instance metrics', allow_abbrev=False)
+    parser.add_argument('--dataset', type=str, required=True, help = 'name of the dataset')
+    (args, _) = parser.parse_known_args()
+
+    main(args.dataset)

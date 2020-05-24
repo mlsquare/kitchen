@@ -1,17 +1,20 @@
 import numpy as np
 import pandas as pd
+import json
 import re
 from statistics import mean
+import argparse
 
 class InstanceMetrics:
 
-    def __init__(self, inst, instance, decision_paths, weights, label, features):
+    def __init__(self, inst, instance, decision_paths, weights, label, features, depths):
         self.inst = inst
         self.instance = instance
         self.decision_paths = decision_paths
         self.weights = weights
         self.label = label
         self.features =  features
+        self.depths = depths
         self.co_occurrence_matrix = np.zeros((len(features), len(features)))
         self.path_lengths = []
         self.overlap_cache = dict()
@@ -37,17 +40,17 @@ class InstanceMetrics:
     def average_path_length(self):
         avg = 0
         for i in range(len(self.path_lengths)):
-            avg += self.path_lengths[i] * weights[i]
-        avg /= sum(weights)
+            avg += self.path_lengths[i] * self.weights[i]
+        avg /= sum(self.weights)
         return avg
 
     # Average frequency of each feature in all paths at all depths for the instance
 
     def feature_frequency(self):
-        freq = np.zeros(len(features))
+        freq = np.zeros(len(self.features))
         for i, path in enumerate(self.decision_paths):
             for pred in path:
-                freq[pred[0]-1] += weights[i]
+                freq[pred[0]-1] += self.weights[i]
         freq /= freq.sum(axis=0, keepdims=True)
         #freq = np.true_divide(freq, freq.sum(axis=0, keepdims=True))
         return freq
@@ -56,15 +59,15 @@ class InstanceMetrics:
     # Returns an array of frequencies of features at depth d
 
     def frequency_at_depth(self, depth):
-        freq = np.zeros(len(features))
+        freq = np.zeros(len(self.features))
         for i, path in enumerate(self.decision_paths):
             if len(path)>depth: # depth is valid
-                freq[path[depth][0]-1] += weights[i]
+                freq[path[depth][0]-1] += self.weights[i]
         s = freq.sum(axis=0, keepdims=True)
         if s!=0:
             freq /= s
         else:
-            freq = np.zeros(len(features))
+            freq = np.zeros(len(self.features))
         return freq
 
     # Frequency of all features occuring at all depths
@@ -90,7 +93,7 @@ class InstanceMetrics:
         print(self.average_path_length())
 
         print("Depth")
-        print(depths[inst])
+        print(self.depths[self.inst])
 
         print("Mean rank of each feature")
         print(self.feature_frequency())
@@ -98,63 +101,78 @@ class InstanceMetrics:
         print("Frequency of each feature at all depths (RAK)")
         print(self.frequency_at_all_depths())
 
-primary_paths = pd.read_csv('../Outputs/iris_scaled_local_paths_100.csv', header = 0)
-secondary_paths = pd.read_csv('../Outputs/iris_scaled_local_paths_per_instance_100.csv', header = 0, index_col=0)
-iris = pd.read_csv('../Data/iris_headers.csv', header = 0)
-bins = pd.read_csv('../Outputs/iris_scaled_local_bin_labels_100.csv', header = 0)
-depths = pd.read_csv('../Outputs/iris_scaled_local_depths_100.csv', header = 0)
 
-# Set instance
-inst = 0
+def main(dataset):
 
-# PATHS
+    # DATASET
+    with open('../Configs/'+dataset+'.json') as config_file:
+        config = json.load(config_file)
 
-primary_paths = primary_paths.values
-secondary_paths = secondary_paths.values
-paths_i = secondary_paths[:,inst]
-paths_i = paths_i[:np.argwhere(pd.isnull(paths_i))[0][0]]
-np.insert(paths_i, inst, primary_paths[inst], axis=0)
-#print(paths_i)
+    primary_paths = pd.read_csv('../Outputs/'+config['primary_paths'], header = 0)
+    secondary_paths = pd.read_csv('../Outputs/'+config['secondary_paths'], header = 0, index_col=0)
+    dataset = pd.read_csv('../Data/'+config['data_with_headers'], header = 0)
+    bins = pd.read_csv('../Outputs/'+config['local_bins'], header = 0)
+    depths = pd.read_csv('../Outputs/'+config['tree_depths'], header = 0)
 
-bin_vals = bins.values
-bin_dict = dict((x[0], float(x[1])) for x in bin_vals)
+    # Set instance
 
-regex = re.compile('([1-4])([A-Z]+)([01])', re.I)
+    inst = 0
 
-path_list = []
+    # PATHS
 
-for path in paths_i:
-    nodes = path.split(",")
-    newpath = []
-    for node in nodes:
-        matchobj =  re.match(regex, node)
-        newpath.append((int(matchobj.group(1)), bin_dict[matchobj.group(2)], matchobj.group(3)))
-    path_list.append(newpath)
+    primary_paths = primary_paths.values
+    secondary_paths = secondary_paths.values
+    paths_i = secondary_paths[:,inst]
+    paths_i = paths_i[:np.argwhere(pd.isnull(paths_i))[0][0]]
+    np.insert(paths_i, inst, primary_paths[inst], axis=0)
 
-# WEIGHTS
+    bin_vals = bins.values
+    bin_dict = dict((x[0], x[1]) for x in bin_vals)
 
-weights = np.repeat(0.01, len(paths_i)-1)
-weights = np.insert(weights, 0, 0.5, axis=0)
+    regex = re.compile(config['path_regex'], re.I)
 
-# DEPTHS
+    path_list = []
 
-depths = depths.values
-depths = depths.flatten()
+    for path in paths_i:
+        nodes = path.split(",")
+        newpath = []
+        for node in nodes:
+            matchobj =  re.match(regex, node)
+            newpath.append((int(matchobj.group(1)), bin_dict[matchobj.group(2)], matchobj.group(3)))
+        path_list.append(newpath)
 
-# DATA AND LABELS
+    # WEIGHTS
 
-dataset = iris.values
-X = dataset[:,0:4].astype(float)
-labels = dataset[:,4]
+    weights = np.repeat(config['secondary_weight'], len(paths_i)-1)
+    weights = np.insert(weights, 0, config['primary_weight'], axis=0)
 
-# FEATURE INDEXES
+    # DEPTHS
 
-features = [1,2,3,4]
+    depths = depths.values
+    depths = depths.flatten()
 
-# MAIN
+    # DATA AND LABELS
 
-metrics = InstanceMetrics(inst, X[inst,:], path_list, weights, labels[inst], features)
+    dataset = dataset.values[0:config['sample']]
+    X = dataset[:,0:config['num_features']]
+    labels = dataset[:,config['target_col']-1]
 
-metrics.display()
+    # FEATURE INDEXES
+
+    features = np.arange(1,config['num_features']+1)
+
+    # MAIN
+
+    metrics = InstanceMetrics(inst, X[inst,:], path_list, weights, labels[inst], features, depths)
+
+    metrics.display()
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description = 'Instance metrics', allow_abbrev=False)
+    parser.add_argument('--dataset', type=str, required=True, help = 'name of the dataset')
+    (args, _) = parser.parse_known_args()
+
+    main(args.dataset)
+
 
 
