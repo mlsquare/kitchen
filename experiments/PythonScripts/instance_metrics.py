@@ -46,7 +46,7 @@ class InstanceMetrics:
 
     # Average frequency of each feature in all paths at all depths for the instance
 
-    def feature_frequency(self):
+    def mean_rank(self):
         freq = np.zeros(len(self.features))
         for i, path in enumerate(self.decision_paths):
             for pred in path:
@@ -54,6 +54,23 @@ class InstanceMetrics:
         freq /= freq.sum(axis=0, keepdims=True)
         #freq = np.true_divide(freq, freq.sum(axis=0, keepdims=True))
         return freq
+
+    # Number of distinct features of a path
+
+    def distinct_features_per_path(self, path):
+        features = [predicate[0] for predicate in path]
+        distinct_features = set(features)
+        return distinct_features
+
+    # Average number of distinct features
+
+    def avg_distinct_features(self):
+        num = 0
+        for i, path in enumerate(self.decision_paths):
+            distfeat = self.distinct_features_per_path(path)
+            num += len(distfeat) *self.weights[i]
+        num /= sum(self.weights)
+        return num
 
     # (Rooted at k) Frequency of all features occurring at a depth in all paths for the instance 
     # Returns an array of frequencies of features at depth d
@@ -96,7 +113,7 @@ class InstanceMetrics:
         print(self.depths[self.inst])
 
         print("Mean rank of each feature")
-        print(self.feature_frequency())
+        print(self.mean_rank())
 
         print("Frequency of each feature at all depths (RAK)")
         print(self.frequency_at_all_depths())
@@ -110,7 +127,7 @@ def main(dataset):
 
     primary_paths = pd.read_csv('../Outputs/'+config['primary_paths'], header = 0)
     secondary_paths = pd.read_csv('../Outputs/'+config['secondary_paths'], header = 0, index_col=0)
-    dataset = pd.read_csv('../Data/'+config['data_with_headers'], header = 0)
+    dataset = pd.read_csv('../Data/'+config['filtered_data_with_headers'], header = 0)
     bins = pd.read_csv('../Outputs/'+config['local_bins'], header = 0)
     depths = pd.read_csv('../Outputs/'+config['tree_depths'], header = 0)
 

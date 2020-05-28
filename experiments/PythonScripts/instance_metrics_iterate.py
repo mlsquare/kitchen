@@ -64,7 +64,7 @@ class InstanceMetrics:
 
     # Average frequency of each feature in all paths at all depths for the instance
 
-    def feature_frequency(self):
+    def mean_rank(self):
         freq = np.zeros(len(self.features))
         for i, path in enumerate(self.decision_paths):
             for pred in path:
@@ -113,7 +113,7 @@ class InstanceMetrics:
         print(self.depths[self.inst])
 
         print("Mean rank of each feature")
-        print(self.feature_frequency())
+        print(self.mean_rank())
 
         print("Frequency of each feature at all depths (RAK)")
         print(self.frequency_at_all_depths())
@@ -133,7 +133,7 @@ def main(dataset):
 
     primary_paths = pd.read_csv('../Outputs/'+config['primary_paths'], header = 0)
     secondary_paths = pd.read_csv('../Outputs/'+config['secondary_paths'], header = 0, index_col=0)
-    dataset = pd.read_csv('../Data/'+config['data_with_headers'], header = 0)
+    dataset = pd.read_csv('../Data/'+config['filtered_data_with_headers'], header = 0)
     bins = pd.read_csv('../Outputs/'+config['local_bins'], header = 0)
     depths = pd.read_csv('../Outputs/'+config['tree_depths'], header = 0)
 
