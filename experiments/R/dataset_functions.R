@@ -5,6 +5,13 @@ dataset_source_csv <- function(dataset_name){
          )
 }
 
+dataset_perturbed_csv <- function(dataset_name){
+  switch(dataset_name, 
+         adult = {return("Data/adult_perturbed.csv")},
+         auto = {return("Data/auto_perturbed.csv")}
+  )
+}
+
 dataset_col_names <- function(dataset_name){
   switch(dataset_name,
          adult = {

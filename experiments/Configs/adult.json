@@ -1,16 +1,18 @@
 {
     "name":"adult",
+    "type":"classification",
     "primary_paths":"adult_local_paths_1000.csv",
     "secondary_paths":"adult_local_paths_per_instance_1000.csv",
     "data_with_headers":"adult_headers.csv",
     "filtered_data_with_headers":"adult_filtered.csv",
+    "perturbed_data":"adult_perturbed.csv",
     "local_bins":"adult_local_bin_labels_1000.csv",
+    "perturbed_paths":"adult_perturbed_paths_1000.csv",
+    "perturbed_local_bins":"adult_perturbed_bin_labels_1000.csv",
     "tree_depths":"adult_local_depths_1000.csv",
     "tree_widths":"adult_tree_widths.csv",
     "leaf_nodes":"adult_leaf_nodes.csv",
-    "factors":"adult_dataset_factors.csv",
     "variable_importance":"adult_variable_importance_1000.csv",
-    "data_numeric":"adult_numeric.csv",
     "num_features":14,
     "target_col":15,
     "path_regex":"([0-9]{1,2})([A-Z]+)([01])",
@@ -19,8 +21,11 @@
     "frame_folder":"local_dt_info_adult",
     "size":30162,
     "sample":1000,
+    "classes":["<=50K",">50K"],
     "columns":["age", "workclass", "fnlwgt", "education", "education-num",
         "marital-status", "occupation", "relationship", "race", "sex", "capital-gain", "capital-loss",
-        "hours-per-week", "native-country", "target"]
+        "hours-per-week", "native-country", "target"],
+    "factors":"adult_dataset_factors.csv",
+    "data_numeric":"adult_numeric.csv"
     
 }

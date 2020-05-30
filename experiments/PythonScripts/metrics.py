@@ -238,7 +238,7 @@ def main(dataset):
         config = json.load(config_file)
 
     primary_paths = pd.read_csv('../Outputs/'+config['primary_paths'], header = 0)
-    dataset = pd.read_csv('../Data/'+config['data_with_headers'], header = 0)
+    dataset = pd.read_csv('../Data/'+config['filtered_data_with_headers'], header = 0) ## FILTERED
     bins = pd.read_csv('../Outputs/'+config['local_bins'], header = 0)
     depths = pd.read_csv('../Outputs/'+config['tree_depths'], header = 0)
     

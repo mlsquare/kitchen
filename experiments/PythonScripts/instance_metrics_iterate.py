@@ -246,8 +246,8 @@ def main(dataset):
     print("\n")
 
     # path lengths
-    print("Average path lengths")
-    print(average_path_lengths)
+    # print("Average path lengths")
+    # print(average_path_lengths)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description = 'Instance metrics', allow_abbrev=False)

@@ -1,10 +1,14 @@
 {
     "name":"iris",
+    "type":"classification",
     "primary_paths":"iris_scaled_local_paths_100.csv",
     "secondary_paths":"iris_scaled_local_paths_per_instance_100.csv",
-    "filtered_data_with_headers":"iris_headers.csv",
     "data_with_headers":"iris_headers.csv",
+    "filtered_data_with_headers":"iris_headers.csv",
+    "perturbed_data":"iris_perturbed.csv",
     "local_bins":"iris_scaled_local_bin_labels_100.csv",
+    "perturbed_paths":"iris_scaled_perturbed_local_paths_100.csv",
+    "perturbed_local_bins":"iris_scaled_local_bin_labels_100.csv",
     "tree_depths":"iris_scaled_local_depths_100.csv",
     "tree_widths":"iris_tree_widths.csv",
     "leaf_nodes":"iris_leaf_nodes.csv",
@@ -17,5 +21,6 @@
     "frame_folder":"local_dt_info_iris_scaled",
     "size":150,
     "sample":150,
+    "classes":["Iris-setosa","Iris-versicolor","Iris-virginica"],
     "columns":["sepal length","sepal width","petal length","petal width"]
 }

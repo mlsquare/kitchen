@@ -8,8 +8,8 @@ def convert_factors_to_numeric(dataset):
     # DATASET
     with open('../Configs/'+dataset+'.json') as config_file:
         config = json.load(config_file)
-
-    dataset = pd.read_csv('../Data/'+config['data_with_headers'], header = 0)
+ 
+    dataset = pd.read_csv('../Data/'+config['filtered_data_with_headers'], header = 0) 
     factors = pd.read_csv('../Outputs/'+config['factors'], header = 0)
 
     dataset = dataset.values
