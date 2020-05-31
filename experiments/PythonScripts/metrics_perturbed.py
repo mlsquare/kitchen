@@ -2,6 +2,8 @@ import numpy as np
 import pandas as pd
 import re
 from statistics import mean
+import json
+import argparse
 from cognitive_chunks import get_cognitive_chunks, get_cognitive_chunks_round 
 
 class Metrics:
@@ -22,14 +24,7 @@ class Metrics:
         return len(self.overlap_cache[repr(rule1) + repr(rule2)])
 
     def cover_point(self, rule, x):
-        for predicate in rule:
-            if predicate[2]=='0': 
-                if x[predicate[0]-1] >= predicate[1]:
-                    return False
-            else:
-                if x[predicate[0]-1] < predicate[1]:
-                    return False
-        return True
+        pass
 
     def cover_dataset(self, rule, data):
         covered_points = set()
@@ -41,7 +36,7 @@ class Metrics:
         full_cover = self.cover_dataset(rule, data)
         correct_cover = set()
         for x in full_cover:
-            if labels[x] == label:
+            if self.labels[x] == label:
                 correct_cover.add(x)
         return correct_cover
 
@@ -101,8 +96,8 @@ class Metrics:
 
     # 5. Average frequency of each feature in all paths at all depths
 
-    def feature_frequency(self):
-        freq = np.zeros(len(features))
+    def mean_rank(self):
+        freq = np.zeros(len(self.features))
         for path in self.decision_paths:
             for pred in path:
                 freq[pred[0]-1] += 1
@@ -114,7 +109,7 @@ class Metrics:
     # Returns an array of frequencies of features at depth d
 
     def frequency_at_depth(self, depth):
-        freq = np.zeros(len(features))
+        freq = np.zeros(len(self.features))
         for path in self.decision_paths:
             if len(path)>depth: # depth is valid
                 freq[path[depth][0]-1] += 1
@@ -122,7 +117,7 @@ class Metrics:
         if s!=0:
             freq /= s
         else:
-            freq = np.zeros(len(features))
+            freq = np.zeros(len(self.features))
         return freq
 
     # 7. Frequency of all features occuring at all depths
@@ -171,6 +166,8 @@ class Metrics:
                     overlap_interclass_sum += overlap_tmp     
 
         return overlap_interclass_sum
+
+
 
     
     #####   ACCURACY METRICS    #####
@@ -233,7 +230,6 @@ class Metrics:
         covers = []
         for i, rule in enumerate(self.decision_paths):
             cover, full_cover = self.rule_correct_cover(rule, self.labels[i], data)
-            #print(cover,full_cover)
             if full_cover==0:
                 covers.append(0)
             else:
@@ -254,10 +250,11 @@ class Metrics:
         num_distinct_features = []
         for path in self.decision_paths:
             num_distinct_features.append(len(self.rule_distinct_features(path)))
-        print("Inter class overlap")
-        print(self.interclass_overlap(X))
-        print("Intra class overlap")
-        print(self.intraclass_overlap(X))
+        print(num_distinct_features)
+        # print("Inter class overlap")
+        # print(self.interclass_overlap(X))
+        # print("Intra class overlap")
+        # print(self.intraclass_overlap(X))
         print("Total number of classes covered")
         print(self.num_classes_covered())
         print("Correct cover")
@@ -267,9 +264,44 @@ class Metrics:
         print("Correct cover")
         print(self.total_correct_cover_rule(X))
         print("Mean rank")
-        print(self.feature_frequency())
+        print(self.mean_rank())
         print("RAK")
         print(self.frequency_at_all_depths())
+
+class CategoricalMetrics(Metrics):
+
+    def __init__(self, decision_paths, labels, features, factors):
+        super().__init__(decision_paths, labels, features)
+        self.factors = factors
+        self.factor_set = dict([(int(f),i) for i,f in enumerate(factors[0,:])])
+
+    def cover_point(self, rule, x):
+        for predicate in rule:
+            if predicate[0] in self.factor_set:
+                if not x[predicate[0]-1] == predicate[1]:
+                    return False
+            elif predicate[2]=='0': 
+                if x[predicate[0]-1] >= float(predicate[1]):
+                    return False
+            else:
+                if x[predicate[0]-1] < float(predicate[1]):
+                    return False
+        return True
+
+class NumericMetrics(Metrics):
+
+    def __init__(self, decision_paths, labels, features):
+        super().__init__(decision_paths, labels, features)
+
+    def cover_point(self, rule, x):
+        for predicate in rule:
+            if predicate[2]=='0': 
+                if x[predicate[0]-1] >= predicate[1]:
+                    return False
+            else:
+                if x[predicate[0]-1] < predicate[1]:
+                    return False
+        return True
 
 class Comparison:
 
@@ -278,108 +310,107 @@ class Comparison:
         self.perturbed = perturbed
 
     def change_of_class(self):
-        classes = ['Iris-setosa','Iris-versicolor ','Iris-virginica']
         op = []
         for i in range(len(self.original.decision_paths)):
             new_op = []
             c1 = self.original.labels[i]
-            c2 = int(self.perturbed.labels[i])
+            c2 = self.perturbed.labels[i]
             p1 = self.original.decision_paths[i]
             p2 = self.perturbed.decision_paths[i]
 
-            if c1!=classes[c2]:
+            if c1!=c2:
                 new_op.append(c1)
-                new_op.append(classes[c2])
+                new_op.append(c2)
                 new_op.append(get_cognitive_chunks_round(p1))
                 if p1==p2:
                     new_op.append('No change')
                 else:
                     new_op.append(get_cognitive_chunks_round(p2))
             op.append(new_op)
-
+        op = pd.DataFrame(op, columns=['Original label','New label', 'Original nodes','Changed nodes'])
         return op
 
     def print_change_of_class(self):
         changes = self.change_of_class()
-        print("Original label\tNew labl\tOriginal\tPerturbed")
-        for i in range(len(changes)):
-            print(i+1,changes[i][0],"--->",changes[i][1],changes[i][2],"--->",changes[i][3])
+        print(changes)
 
-    def print_cognitive_chunks(self):
-        for i, path in enumerate(self.original.decision_paths):
-            print(i+1,". ",path," : ",get_cognitive_chunks_round(path))
-                
-paths = pd.read_csv('../Outputs/iris_scaled_local_paths_100.csv', header = 0)
-paths_p = pd.read_csv('../Outputs/iris_scaled_perturbed_local_paths_100.csv', header = 0)
-iris = pd.read_csv('../Data/iris_headers.csv', header = 0)
-iris_p = pd.read_csv('../Data/iris_perturbed.csv', header = 0)
-bins = pd.read_csv('../Outputs/iris_scaled_local_bin_labels_100.csv', header = 0)
-depths = pd.read_csv('../Outputs/iris_scaled_local_depths_100.csv', header = 0)
-widths = depths = pd.read_csv('../Outputs/iris_tree_widths.csv', header = 0)
+def main(dataset):
 
-# PATHS
+    # DATASET
+    with open('../Configs/'+dataset+'.json') as config_file:
+        config = json.load(config_file)
 
-paths = paths_p.values
-bin_vals = bins.values
-
-bin_dict = dict((x[0], float(x[1])) for x in bin_vals)
-
-regex = re.compile('([1-4])([A-Z]+)([01])', re.I)
+    paths = pd.read_csv('../Outputs/'+config['perturbed_paths'], header = 0)
+    dataset = pd.read_csv('../Data/'+config['filtered_data_with_headers'], header = 0)
+    perturbed_dataset = pd.read_csv('../Data/'+config['perturbed_data'], header = 0)
+    bins = pd.read_csv('../Outputs/'+config['perturbed_local_bins'], header = 0)
+    depths = pd.read_csv('../Outputs/'+config['tree_depths'], header = 0)
     
-path_list = []
+    # PATHS
 
-for path in paths[:, 0]:
-    nodes = path.split(",")
-    newpath = []
-    for node in nodes:
-        matchobj =  re.match(regex, node)
-        newpath.append((int(matchobj.group(1)), bin_dict[matchobj.group(2)], matchobj.group(3)))
-    path_list.append(newpath)
+    paths = paths.values
 
-path_list_p = []
+    bin_vals = bins.values
 
-for path in paths[:, 1]:
-    nodes = path.split(",")
-    newpath = []
-    for node in nodes:
-        matchobj =  re.match(regex, node)
-        newpath.append((int(matchobj.group(1)), bin_dict[matchobj.group(2)], matchobj.group(3)))
-    path_list_p.append(newpath)
+    if 'factors' in config:
+        bin_dict = dict((x[0], x[1]) for x in bin_vals) #.replace(')', '').replace('(', '')
+    else:
+        bin_dict = dict((x[0], float(x[1])) for x in bin_vals)
 
-#print(path_list)
-#print(path_list_p)
+    regex = re.compile(config['path_regex'], re.I)
 
-# DEPTHS
+    path_list = []
 
-depths = depths.values
-depths = depths.flatten()
+    for i in range(2):
+        temp = []
+        for path in paths[:,i]:
+            nodes = path.split(",")
+            newpath = []
+            for node in nodes:
+                matchobj =  re.match(regex, node)
+                newpath.append((int(matchobj.group(1)), bin_dict[matchobj.group(2)], matchobj.group(3)))
+            temp.append(newpath)
+        path_list.append(temp)
 
-# DATA AND LABELS
+    # DEPTHS
 
-dataset = iris.values
-X = dataset[:,0:4].astype(float)
-labels = dataset[:,4]
+    depths = depths.values
+    depths = depths.flatten()
 
-dataset_p = iris_p.values
-X_p = dataset_p[:,1:5].astype(float)
-labels_p = dataset_p[:,6]
+    # FEATURE INDEXES
 
-# WIDTHS
+    features = np.arange(1,config['num_features']+1)
 
-widths = widths.values[:,0]
+    # DATA AND LABELS
 
-# FEATURES
+    dataset = dataset.values[0:config['sample']]
+    X = dataset[:,0:config['num_features']]
+    labels = dataset[:,config['target_col']-1]
+    print(dataset)
 
-features = [1,2,3,4]
+    perturbed_dataset = perturbed_dataset.values[0:config['sample']]
+    perturbed_X = perturbed_dataset[:,0:config['num_features']]
+    perturbed_labels = perturbed_dataset[:,config['target_col']]
 
-# MAIN
+    if 'factors' in config:
+        factors = pd.read_csv('../Outputs/'+config['factors'], header = 0)
+        factors = factors.values
+        metrics = CategoricalMetrics(path_list[0], labels, features, factors)
+        perturbed_metrics = CategoricalMetrics(path_list[1], perturbed_labels, features, factors)
+    else:
+        metrics = NumericMetrics(path_list[0], labels, features)
+        perturbed_metrics = NumericMetrics(path_list[1], perturbed_labels, features)
 
-metrics = Metrics(path_list, labels, features)
-metrics_perturbed = Metrics(path_list_p, labels_p, features)
+    metrics.display(X)
+    perturbed_metrics.display(perturbed_X)
 
-#metrics.display(X)
-#metrics_perturbed.display(X_p)
+    if 'factors' not in config:
+        comp = Comparison(metrics, perturbed_metrics)
+        comp.print_change_of_class()
 
-comp = Comparison(metrics, metrics_perturbed)
-#comp.print_cognitive_chunks()
-comp.print_change_of_class()
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description = 'Instance metrics', allow_abbrev=False)
+    parser.add_argument('--dataset', type=str, required=True, help = 'name of the dataset')
+    (args, _) = parser.parse_known_args()
+
+    main(args.dataset)

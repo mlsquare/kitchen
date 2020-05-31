@@ -1,14 +1,16 @@
 dataset_source_csv <- function(dataset_name){
   switch(dataset_name, 
          adult = {return("Data/adult_headers.csv")},
-         auto = {return("Data/auto_headers.csv")}
+         auto = {return("Data/auto_headers.csv")},
+         iris = {return("Data/iris_scaled.csv")}
          )
 }
 
 dataset_perturbed_csv <- function(dataset_name){
   switch(dataset_name, 
          adult = {return("Data/adult_perturbed.csv")},
-         auto = {return("Data/auto_perturbed.csv")}
+         auto = {return("Data/auto_perturbed.csv")},
+         iris = {return("Data/iris_perturbed.csv")}
   )
 }
 
@@ -21,6 +23,9 @@ dataset_col_names <- function(dataset_name){
            },
          auto = {
            return(c("cylinders","displacement","horsepower","weight","acceleration","model","origin","mpg"))
+         },
+         iris = {
+           return(c("sepal-length","sepal-width","petal-length","petal-width","species"))
          }
          )
 }
@@ -36,6 +41,9 @@ dataset_preprocessed <- function(dataset_name, dataset){
     dataset = dataset[dataset["horsepower"] != " ?",]
     return(dataset)
   }
+  if(dataset_name == "iris"){
+    return(dataset)
+  }
 }
 
 get_ntrees <- function(dataset_name){
@@ -44,6 +52,9 @@ get_ntrees <- function(dataset_name){
   }
   if(dataset_name == "auto"){
     return(392);
+  }
+  if(dataset_name == "iris"){
+    return(150)
   }
 }
 
@@ -54,6 +65,9 @@ get_start <- function(dataset_name){
   if(dataset_name == "auto"){
     return(1);
   }
+  if(dataset_name == "iris"){
+    return(1)
+  }
 }
 
 get_nsample <- function(dataset_name){
@@ -62,6 +76,9 @@ get_nsample <- function(dataset_name){
   }
   if(dataset_name == "auto"){
     return(100);
+  }
+  if(dataset_name == "iris"){
+    return(100)
   }
 }
 
@@ -72,6 +89,9 @@ get_nprim <- function(dataset_name){
   if(dataset_name == "auto"){
     return(25);
   }
+  if(dataset_name == "iris"){
+    return(50)
+  }
 }
 
 get_nsec <- function(dataset_name){
@@ -80,6 +100,9 @@ get_nsec <- function(dataset_name){
   }
   if(dataset_name == "auto"){
     return(75);
+  }
+  if(dataset_name == "iris"){
+    return(50)
   }
 }
 

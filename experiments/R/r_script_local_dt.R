@@ -14,7 +14,7 @@ setwd('/Users/nayana/projects/Project/kitchen/experiments/')
 source("R/dataset_functions.R")
 
 ## Set dataset
-dataset_name <- "auto"
+dataset_name <- "iris"
 
 ## Load dataset
 dataset_csv <- dataset_source_csv(dataset_name)
@@ -25,7 +25,10 @@ colnames(dataset) <- col_names
 ## Preprocessing
 dataset <- dataset_preprocessed(dataset_name, dataset)
 
-write.csv(dataset, file = paste0("Data/",dataset_name,"_filtered.csv"), row.names = FALSE)
+## Target
+target_var <- col_names[length(col_names)]
+
+#write.csv(dataset, file = paste0("Data/",dataset_name,"_filtered.csv"), row.names = FALSE)
 
 ## Add row IDs
 ID <- 1:nrow(dataset)
@@ -38,7 +41,7 @@ return_path <- function(x){
   path_list <- list()
   test_yval <- list()
   while(nspl != 0){
-    i <- subset(x, select=-c(mpg))
+    i <- subset(x, select=-c(species))
     npos <- match(node, nnum)
     nspl <- nodes[4][npos,] # Recheck
     var <- vnum[nspl]
@@ -73,11 +76,6 @@ return_path <- function(x){
         node_decision <- paste(as.character(var), label, 1, sep = "")
         path_list <- c(path_list, node_decision)
         dir = -ncat
-      }
-      
-      if(is.na(dir)){
-        print(ncat)
-        print(var)
       }
       
       if (dir == -1){
@@ -141,37 +139,40 @@ for (iter_index in 1:ntrees) {
   x <- x[,2:ncol(dataset)]
   
   ## Create local tree and export details as csv
-  local_tree <- rpart(mpg ~ ., data = x, minsplit=2, cp=0, method = "anova")
+  f <- paste0(target_var," ~ .")
+  local_tree <- rpart(f, data = x, minsplit=2, cp=0)
   vi_tree <- local_tree$variable.importance
   vi <- append(vi, list(vi_tree))
-  model <- paste0("R/trees/",dataset_name,"local_tree",iter_index,".RData")
+  model <- paste0("R/trees/",dataset_name,"_local_tree",iter_index,".RData")
   save(local_tree, file = model)
   
   frame_csv_name <- paste0("R/local_dt_info_", dataset_name, "/frame", "_", iter_index,".csv")
   splits_csv_name <- paste0("R/local_dt_info_", dataset_name, "/splits", "_", iter_index,".csv")
-  write.csv(local_tree$frame, file=frame_csv_name)
-  write.csv(local_tree$splits, file=splits_csv_name)
+  #write.csv(local_tree$frame, file=frame_csv_name)
+  #write.csv(local_tree$splits, file=splits_csv_name)
   
   summary_csv_name <- paste0("R/summaries/", dataset_name, "_summary", "_", iter_index,".txt")
-  summary(local_tree, file = summary_csv_name)
+  #summary(local_tree, file = summary_csv_name)
 
   assoc_matrix[iter_index,] <- instances[(nprim+1):nsample]
 }
 
+## PART 2
+
 ## Association matrix
-write.csv(assoc_matrix, file = paste0("Outputs/", dataset_name, "_association_matrix_", ntrees, ".csv"), row.names = FALSE)
+#write.csv(assoc_matrix, file = paste0("Outputs/", dataset_name, "_association_matrix_", ntrees, ".csv"), row.names = FALSE)
 
 ## Variable importance
 vi_df <- purrr::map_dfr( vi, as.list )
 vi_df_ordered <- vi_df[col_names[1:length(col_names)-1]]
-write.csv(vi_df_ordered, file = paste0("Outputs/", dataset_name, "_variable_importance_", ntrees, ".csv"), row.names = FALSE)
+#write.csv(vi_df_ordered, file = paste0("Outputs/", dataset_name, "_variable_importance_", ntrees, ".csv"), row.names = FALSE)
 
 ## Secondary instance paths
 
 for (iter_index in 1:ntrees) {
   print(iter_index)
   
-  model <- paste0("R/trees/",dataset_name,"local_tree",iter_index,".RData")
+  model <- paste0("R/trees/",dataset_name,"_local_tree",iter_index,".RData")
   local_tree <- get(load(file = model))
   
   temp_frame <- local_tree$frame
@@ -217,15 +218,15 @@ for (iter_index in 1:ntrees) {
 # dev.off()
 
 ## Depths
-write.csv(depths, file = paste0("Outputs/", dataset_name, "_local_depths_", ntrees, ".csv"), row.names = FALSE)
+#write.csv(depths, file = paste0("Outputs/", dataset_name, "_local_depths_", ntrees, ".csv"), row.names = FALSE)
 
 ## Paths per instance
 instance_paths_df <- data.frame(t(instance_paths))
-write.csv(instance_paths_df, file=paste0("Outputs/", dataset_name, "_local_paths_per_instance_", ntrees, ".csv"))
+#write.csv(instance_paths_df, file=paste0("Outputs/", dataset_name, "_local_paths_per_instance_", ntrees, ".csv"))
 
 ## Export paths and bin details
 col_headings <- c('paths')
 names(final_paths) <- col_headings
-write.csv(final_paths, file = paste0("Outputs/", dataset_name, "_local_paths_", ntrees, ".csv"), row.names = FALSE)
+#write.csv(final_paths, file = paste0("Outputs/", dataset_name, "_local_paths_", ntrees, ".csv"), row.names = FALSE)
 label_df <- data.frame(values(global_bins))
-write.csv(label_df, file = paste0("Outputs/", dataset_name, "_local_bin_labels_", ntrees, ".csv"))
+#write.csv(label_df, file = paste0("Outputs/", dataset_name, "_local_bin_labels_", ntrees, ".csv"))

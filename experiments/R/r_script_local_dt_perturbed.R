@@ -14,7 +14,7 @@ setwd('/Users/nayana/projects/Project/kitchen/experiments/')
 source("R/dataset_functions.R")
 
 ## Set dataset
-dataset_name <- "adult"
+dataset_name <- "iris"
 
 ## Load dataset
 dataset_csv <- dataset_source_csv(dataset_name)
@@ -28,6 +28,9 @@ colnames(dataset_p) <- col_names
 
 ## Preprocessing
 dataset <- dataset_preprocessed(dataset_name, dataset)
+
+## Target
+target_var <- col_names[length(col_names)]
 
 ## Add row IDs
 ID <- 1:nrow(dataset)
@@ -43,7 +46,7 @@ return_path <- function(x){
   path_list <- list()
   test_yval <- list()
   while(nspl != 0){
-    i <- subset(x, select=-c(target))
+    i <- subset(x, select=-c(species))
     npos <- match(node, nnum)
     nspl <- nodes[4][npos,] # Recheck
     var <- vnum[nspl]
@@ -121,7 +124,7 @@ global_bins <- hash()
 
 for (iter_index in 1:ntrees) {
   print(iter_index)
-  x <- dataset[iter_index, 1:1:ncol(dataset)]
+  x <- dataset[iter_index, 1:ncol(dataset)]
   x <- x[rep(seq_len(nrow(x)), nprim),]
   x <- x[rowSums(is.na(x)) == 0,]  
   x <- rbind(x, dataset %>%
@@ -132,14 +135,15 @@ for (iter_index in 1:ntrees) {
   x <- x[,2:ncol(dataset)]
   
   ## Create local tree and export details as csv
-  local_tree <- rpart(target ~ ., data = x, minsplit=1, minbucket=1, cp=0)
+  f <- paste0(target_var," ~ .")
+  local_tree <- rpart(f, data = x, minsplit=1, cp=0)
   model <- paste0("R/trees/",dataset_name,"_perturbed_local_tree",iter_index,".RData")
   save(local_tree, file = model)
   
   frame_csv_name <- paste0("R/local_dt_info_", dataset_name, "_perturbed/frame", "_", iter_index,".csv")
   splits_csv_name <- paste0("R/local_dt_info_", dataset_name, "_perturbed/splits", "_", iter_index,".csv")
-  write.csv(local_tree$frame, file=frame_csv_name)
-  write.csv(local_tree$splits, file=splits_csv_name)
+  #write.csv(local_tree$frame, file=frame_csv_name)
+  #write.csv(local_tree$splits, file=splits_csv_name)
   temp_frame <- local_tree$frame
   
   nodes <- as.numeric(rownames(temp_frame))
@@ -203,7 +207,7 @@ for (iter_index in 1:ntrees) {
 # Primary paths - original and perturbed
 col_headings <- c('original','perturbed')
 names(final_paths) <- col_headings
-write.csv(final_paths, file = paste0("Outputs/", dataset_name, "_perturbed_paths_", ntrees, ".csv"), row.names = FALSE)
+#write.csv(final_paths, file = paste0("Outputs/", dataset_name, "_perturbed_paths_", ntrees, ".csv"), row.names = FALSE)
 
 label_df <- data.frame(values(global_bins))
-write.csv(label_df, file = paste0("Outputs/", dataset_name, "_perturbed_bin_labels_", ntrees, ".csv"))
+#write.csv(label_df, file = paste0("Outputs/", dataset_name, "_perturbed_bin_labels_", ntrees, ".csv"))

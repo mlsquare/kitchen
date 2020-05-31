@@ -18,7 +18,6 @@ def get_cognitive_chunks(path):
 def get_cognitive_chunks_round(path):
     chunks = [[float('-inf'), float('inf')] for _ in range(4)]
     for node in path:
-        print(node[1])
         if node[2]=='0' and chunks[node[0]-1][1]>math.floor(node[1]*10000)/10000:
             chunks[node[0]-1][1] = math.floor(node[1]*10000)/10000
         if node[2]=='1' and chunks[node[0]-1][0]<math.floor(node[1]*10000)/10000:

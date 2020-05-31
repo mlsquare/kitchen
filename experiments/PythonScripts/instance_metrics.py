@@ -7,14 +7,14 @@ import argparse
 
 class InstanceMetrics:
 
-    def __init__(self, inst, instance, decision_paths, weights, label, features, depths):
+    def __init__(self, inst, instance, decision_paths, weights, label, features, depth):
         self.inst = inst
         self.instance = instance
         self.decision_paths = decision_paths
         self.weights = weights
         self.label = label
         self.features =  features
-        self.depths = depths
+        self.depth = depth
         self.co_occurrence_matrix = np.zeros((len(features), len(features)))
         self.path_lengths = []
         self.overlap_cache = dict()
@@ -110,7 +110,7 @@ class InstanceMetrics:
         print(self.average_path_length())
 
         print("Depth")
-        print(self.depths[self.inst])
+        print(self.depth)
 
         print("Mean rank of each feature")
         print(self.mean_rank())
@@ -180,7 +180,7 @@ def main(dataset):
 
     # MAIN
 
-    metrics = InstanceMetrics(inst, X[inst,:], path_list, weights, labels[inst], features, depths)
+    metrics = InstanceMetrics(inst, X[inst,:], path_list, weights, labels[inst], features, depths[inst])
 
     metrics.display()
 

@@ -2,43 +2,43 @@
 "2","4","6","7","8","9","10","14","15"
 " ?"," 10th"," Divorced"," ?"," Husband"," Amer-Indian-Eskimo"," Female"," ?"," <=50K"
 " Federal-gov"," 11th"," Married-AF-spouse"," Adm-clerical"," Not-in-family"," Asian-Pac-Islander"," Male"," Cambodia"," >50K"
-" Local-gov"," 12th"," Married-civ-spouse"," Armed-Forces"," Other-relative"," Black",NA," Canada",NA
-" Never-worked"," 1st-4th"," Married-spouse-absent"," Craft-repair"," Own-child"," Other",NA," China",NA
-" Private"," 5th-6th"," Never-married"," Exec-managerial"," Unmarried"," White",NA," Columbia",NA
-" Self-emp-inc"," 7th-8th"," Separated"," Farming-fishing"," Wife",NA,NA," Cuba",NA
-" Self-emp-not-inc"," 9th"," Widowed"," Handlers-cleaners",NA,NA,NA," Dominican-Republic",NA
-" State-gov"," Assoc-acdm",NA," Machine-op-inspct",NA,NA,NA," Ecuador",NA
-" Without-pay"," Assoc-voc",NA," Other-service",NA,NA,NA," El-Salvador",NA
-NA," Bachelors",NA," Priv-house-serv",NA,NA,NA," England",NA
-NA," Doctorate",NA," Prof-specialty",NA,NA,NA," France",NA
-NA," HS-grad",NA," Protective-serv",NA,NA,NA," Germany",NA
-NA," Masters",NA," Sales",NA,NA,NA," Greece",NA
-NA," Preschool",NA," Tech-support",NA,NA,NA," Guatemala",NA
-NA," Prof-school",NA," Transport-moving",NA,NA,NA," Haiti",NA
-NA," Some-college",NA,NA,NA,NA,NA," Holand-Netherlands",NA
-NA,NA,NA,NA,NA,NA,NA," Honduras",NA
-NA,NA,NA,NA,NA,NA,NA," Hong",NA
-NA,NA,NA,NA,NA,NA,NA," Hungary",NA
-NA,NA,NA,NA,NA,NA,NA," India",NA
-NA,NA,NA,NA,NA,NA,NA," Iran",NA
-NA,NA,NA,NA,NA,NA,NA," Ireland",NA
-NA,NA,NA,NA,NA,NA,NA," Italy",NA
-NA,NA,NA,NA,NA,NA,NA," Jamaica",NA
-NA,NA,NA,NA,NA,NA,NA," Japan",NA
-NA,NA,NA,NA,NA,NA,NA," Laos",NA
-NA,NA,NA,NA,NA,NA,NA," Mexico",NA
-NA,NA,NA,NA,NA,NA,NA," Nicaragua",NA
-NA,NA,NA,NA,NA,NA,NA," Outlying-US(Guam-USVI-etc)",NA
-NA,NA,NA,NA,NA,NA,NA," Peru",NA
-NA,NA,NA,NA,NA,NA,NA," Philippines",NA
-NA,NA,NA,NA,NA,NA,NA," Poland",NA
-NA,NA,NA,NA,NA,NA,NA," Portugal",NA
-NA,NA,NA,NA,NA,NA,NA," Puerto-Rico",NA
-NA,NA,NA,NA,NA,NA,NA," Scotland",NA
-NA,NA,NA,NA,NA,NA,NA," South",NA
-NA,NA,NA,NA,NA,NA,NA," Taiwan",NA
-NA,NA,NA,NA,NA,NA,NA," Thailand",NA
-NA,NA,NA,NA,NA,NA,NA," Trinadad&Tobago",NA
-NA,NA,NA,NA,NA,NA,NA," United-States",NA
-NA,NA,NA,NA,NA,NA,NA," Vietnam",NA
-NA,NA,NA,NA,NA,NA,NA," Yugoslavia",NA
+" Local-gov"," 12th"," Married-civ-spouse"," Armed-Forces"," Other-relative"," Black",," Canada",
+" Never-worked"," 1st-4th"," Married-spouse-absent"," Craft-repair"," Own-child"," Other",," China",
+" Private"," 5th-6th"," Never-married"," Exec-managerial"," Unmarried"," White",," Columbia",
+" Self-emp-inc"," 7th-8th"," Separated"," Farming-fishing"," Wife",,," Cuba",
+" Self-emp-not-inc"," 9th"," Widowed"," Handlers-cleaners",,,," Dominican-Republic",
+" State-gov"," Assoc-acdm",," Machine-op-inspct",,,," Ecuador",
+" Without-pay"," Assoc-voc",," Other-service",,,," El-Salvador",
+," Bachelors",," Priv-house-serv",,,," England",
+," Doctorate",," Prof-specialty",,,," France",
+," HS-grad",," Protective-serv",,,," Germany",
+," Masters",," Sales",,,," Greece",
+," Preschool",," Tech-support",,,," Guatemala",
+," Prof-school",," Transport-moving",,,," Haiti",
+," Some-college",,,,,," Holand-Netherlands",
+,,,,,,," Honduras",
+,,,,,,," Hong",
+,,,,,,," Hungary",
+,,,,,,," India",
+,,,,,,," Iran",
+,,,,,,," Ireland",
+,,,,,,," Italy",
+,,,,,,," Jamaica",
+,,,,,,," Japan",
+,,,,,,," Laos",
+,,,,,,," Mexico",
+,,,,,,," Nicaragua",
+,,,,,,," Outlying-US(Guam-USVI-etc)",
+,,,,,,," Peru",
+,,,,,,," Philippines",
+,,,,,,," Poland",
+,,,,,,," Portugal",
+,,,,,,," Puerto-Rico",
+,,,,,,," Scotland",
+,,,,,,," South",
+,,,,,,," Taiwan",
+,,,,,,," Thailand",
+,,,,,,," Trinadad&Tobago",
+,,,,,,," United-States",
+,,,,,,," Vietnam",
+,,,,,,," Yugoslavia",

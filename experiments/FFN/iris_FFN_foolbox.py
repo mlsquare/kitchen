@@ -1,8 +1,11 @@
 import tensorflow
 from tensorflow.keras import backend as K
+
 import pandas as pd
 import numpy as np
 import eagerpy as ep
+
+from sklearn.preprocessing import LabelEncoder
 from foolbox import TensorFlowModel, accuracy
 from foolbox.attacks import L2AdditiveGaussianNoiseAttack
 from sklearn.metrics import accuracy_score
@@ -12,41 +15,42 @@ tensorflow.random.set_seed(0)
 
 model = tensorflow.keras.models.load_model('iris_ffn.h5')
 
-dataframe = pd.read_csv("../Data/iris_with_paths.csv", header=None)
+dataframe = pd.read_csv("../Data/iris_scaled.csv", header=0)
 dataset = dataframe.values
-X = dataset[1:,1:5].astype(float)
-Y = dataset[1:,5].astype(int)
+X = dataset[:,:4].astype(float)
+labels = dataset[:,4]
+
+print(labels)
+
+le = LabelEncoder()
+Y = le.fit_transform(labels)
 
 fmodel = TensorFlowModel(model, bounds=(-10, 10))
 attack = L2AdditiveGaussianNoiseAttack()
 epsilons = np.linspace(0.0, 6.0, num=480, endpoint=False)
 advs, _, success = attack(fmodel, X, K.constant(Y), epsilons=epsilons)
 
-final_ip = np.zeros((len(X),4))
-ip_added = np.zeros(len(X))
+perturbed = np.zeros((len(X),4))
+added = np.zeros(len(X))
 
 for eps, adv in zip(epsilons, advs):
-    if 0 not in ip_added:
+    if 0 not in added:
         break
     pred = model.predict(adv)
     pred_class = np.argmax(pred, axis=1)
     dif = [True if i[0]==i[1] else False for i in zip(pred_class, Y)] #True if class is correct
     for i in range(len(dif)):
-        if dif[i]==False and ip_added[i]==0:
-            final_ip[i] = adv[i]
-            ip_added[i] = 1
-    #print(dif)
+        if dif[i]==False and added[i]==0:
+            perturbed[i] = adv[i]
+            added[i] = 1
     #print(eps, accuracy_score(Y, pred_class))
 
-#print(final_ip)
-#print(ip_added)
-
-pred = model.predict(final_ip)
+pred = model.predict(perturbed)
 pred_class = np.argmax(pred, axis=1)
-#print(pred_class)
-Y = np.reshape(Y, (len(Y), 1))
+labels = np.reshape(labels, (len(labels), 1))
+pred_class = le.inverse_transform(pred_class)
 pred_class = np.reshape(pred_class, (len(pred_class), 1))
-op = np.hstack((final_ip,Y,pred_class))
+op = np.hstack((perturbed,labels,pred_class))
 print(op)
 
 pd.DataFrame(op).to_csv("../Data/iris_perturbed.csv", index = False) # Change R file
