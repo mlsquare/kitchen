@@ -4,7 +4,7 @@ import re
 from statistics import mean
 import json
 import argparse
-from cognitive_chunks import get_cognitive_chunks, get_cognitive_chunks_round 
+from PythonScripts.cognitive_chunks import get_cognitive_chunks_round, get_cognitive_chunks_round
 
 class Metrics:
 
@@ -133,6 +133,14 @@ class Metrics:
         freq = np.vstack(freq)
         return freq
 
+    #8. Average number of distinct features
+
+    def average_distinct_features(self):
+        num_distinct_features = []
+        for path in self.decision_paths:
+            num_distinct_features.append(len(self.rule_distinct_features(path)))
+        return mean(num_distinct_features)
+
     ## B. WITH INPUT DATA ##
 
     # 1. Intra-class overlap
@@ -240,29 +248,22 @@ class Metrics:
         print("METRICS")
         print("Decision set size")
         print(self.decision_paths_size())
-        print("Length of rules")
-        print(self.rule_lengths)
         print("Decision set length")
         print(self.decision_paths_length())
         print("Average rule length")
         print(self.average_rule_length())
-        print("Distinct features")
-        num_distinct_features = []
-        for path in self.decision_paths:
-            num_distinct_features.append(len(self.rule_distinct_features(path)))
-        print(num_distinct_features)
-        # print("Inter class overlap")
-        # print(self.interclass_overlap(X))
-        # print("Intra class overlap")
-        # print(self.intraclass_overlap(X))
+        print("Average distinct features")
+        print(self.average_distinct_features())
+        print("Inter class overlap")
+        print(self.interclass_overlap(X))
+        print("Intra class overlap")
+        print(self.intraclass_overlap(X))
         print("Total number of classes covered")
         print(self.num_classes_covered())
         print("Correct cover")
         print(self.total_correct_cover(X))
         print("Incorrect cover")
         print(self.total_incorrect_cover(X))
-        print("Correct cover")
-        print(self.total_correct_cover_rule(X))
         print("Mean rank")
         print(self.mean_rank())
         print("RAK")
@@ -386,7 +387,6 @@ def main(dataset):
     dataset = dataset.values[0:config['sample']]
     X = dataset[:,0:config['num_features']]
     labels = dataset[:,config['target_col']-1]
-    print(dataset)
 
     perturbed_dataset = perturbed_dataset.values[0:config['sample']]
     perturbed_X = perturbed_dataset[:,0:config['num_features']]
