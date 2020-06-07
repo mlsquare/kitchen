@@ -1,8 +1,8 @@
 import pandas as pd
 import math
 
-def get_cognitive_chunks(path):
-    chunks = [[float('-inf'), float('inf')] for _ in range(4)]
+def get_cognitive_chunks(path, num_features):
+    chunks = [[float('-inf'), float('inf')] for _ in range(num_features+1)]
     for node in path:
         if node[2]=='0' and chunks[node[0]-1][1]>node[1]:
             chunks[node[0]-1][1] = node[1]
@@ -15,8 +15,8 @@ def get_cognitive_chunks(path):
     chunks = [x for i,x in enumerate(chunks) if i+1 in index]
     return chunks
 
-def get_cognitive_chunks_round(path):
-    chunks = [[float('-inf'), float('inf')] for _ in range(4)]
+def get_cognitive_chunks_round(path, num_features):
+    chunks = [[float('-inf'), float('inf')] for _ in range(num_features+1)]
     for node in path:
         if node[2]=='0' and chunks[node[0]-1][1]>math.floor(node[1]*10000)/10000:
             chunks[node[0]-1][1] = math.floor(node[1]*10000)/10000

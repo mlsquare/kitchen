@@ -26,6 +26,5 @@
         "marital-status", "occupation", "relationship", "race", "sex", "capital-gain", "capital-loss",
         "hours-per-week", "native-country", "target"],
     "factors":"adult_dataset_factors.csv",
-    "data_numeric":"adult_numeric.csv"
-    
+    "data_numeric":"adult_numeric.csv"   
 }

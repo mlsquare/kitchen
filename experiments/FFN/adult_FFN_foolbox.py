@@ -101,9 +101,6 @@ optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 loss_fn = nn.CrossEntropyLoss()
 epochs = 100
 
-def print_(loss):
-    print ("The loss calculated: ", loss)
-
 """
 Format after one-hot encoding: (column ranges inclusive)
     0 : age
@@ -130,6 +127,9 @@ x_train[:,50:56] = F.softmax(x_train[:,50:56], dim = -1)
 x_train[:,56:61] = F.softmax(x_train[:,56:61], dim = -1)
 x_train[:,61:63] = F.softmax(x_train[:,61:63], dim = -1)
 x_train[:,63:104] = F.softmax(x_train[:,63:104], dim = -1)
+
+def print_(loss):
+    print ("The loss calculated: ", loss)
 
 for epoch in range(1, epochs+1):
     print ("Epoch #",epoch)
@@ -208,7 +208,6 @@ perturbed_1b = np.reshape(perturbed_1b, (len(perturbed_1b), 1))
 perturbed_1c = perturbed_1[:,2]
 perturbed_1c = np.reshape(perturbed_1c, (len(perturbed_1c), 1))
 perturbed_1d = perturbed_1[:,3:6]
-#perturbed_1a = np.reshape(perturbed_1a, (len(perturbed_1a), 1))
 
 perturbed_2 = np.argmax(perturbed[:,6:13], axis = 1)
 perturbed_2 = le_wc.inverse_transform(perturbed_2)

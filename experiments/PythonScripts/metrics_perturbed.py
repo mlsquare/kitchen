@@ -4,16 +4,23 @@ import re
 from statistics import mean
 import json
 import argparse
+import pickle
 from PythonScripts.cognitive_chunks import get_cognitive_chunks_round, get_cognitive_chunks_round
 
 class Metrics:
 
-    def __init__(self, decision_paths, labels, features):
+    def __init__(self, decision_paths, labels, features, factors=None):
         self.decision_paths = decision_paths
         self.labels = labels
         self.features = features
         self.overlap_cache = dict()
         self.rule_lengths = []
+        if factors is None:
+            self.factors = []
+            self.factor_set = dict()
+        else:
+            self.factors = factors
+            self.factor_set = dict([(int(f),i) for i,f in enumerate(factors[0,:])])
 
         for rule in decision_paths:
             self.rule_lengths.append(len(rule))
@@ -24,21 +31,32 @@ class Metrics:
         return len(self.overlap_cache[repr(rule1) + repr(rule2)])
 
     def cover_point(self, rule, x):
-        pass
+        for predicate in rule:
+            if predicate[0] in self.factor_set:
+                if not x[predicate[0]-1] == predicate[1]:
+                    return False
+            elif predicate[2]=='0': 
+                if x[predicate[0]-1] >= float(predicate[1]):
+                    return False
+            else:
+                if x[predicate[0]-1] < float(predicate[1]):
+                    return False
+        return True
 
     def cover_dataset(self, rule, data):
         covered_points = set()
         for i, x in enumerate(data):
-            if(self.cover_point(rule, x)): covered_points.add(i)
+            if self.cover_point(rule, x): covered_points.add(i)
         return covered_points
 
     def correct_cover(self, rule, label, data):
-        full_cover = self.cover_dataset(rule, data)
-        correct_cover = set()
-        for x in full_cover:
-            if self.labels[x] == label:
-                correct_cover.add(x)
-        return correct_cover
+        pass
+        # full_cover = self.cover_dataset(rule, data)
+        # correct_cover = set()
+        # for x in full_cover:
+        #     if self.labels[x] == label:
+        #         correct_cover.add(x)
+        # return correct_cover
 
     def incorrect_cover(self, rule, label, data):
         full_cover = self.cover_dataset(rule, data)
@@ -84,15 +102,10 @@ class Metrics:
     def average_rule_length(self):
         return mean(self.rule_lengths)
 
-    # 4. Number of classes covered 
+    # 4. Number of classes/bins covered 
 
     def num_classes_covered(self):
-        classes_covered = set()
-
-        for i in range(len(self.labels)):
-            classes_covered.add(self.labels[i]) #class of rule
-
-        return len(classes_covered)
+        pass
 
     # 5. Average frequency of each feature in all paths at all depths
 
@@ -254,10 +267,10 @@ class Metrics:
         print(self.average_rule_length())
         print("Average distinct features")
         print(self.average_distinct_features())
-        print("Inter class overlap")
-        print(self.interclass_overlap(X))
-        print("Intra class overlap")
-        print(self.intraclass_overlap(X))
+        # print("Inter class overlap")
+        # print(self.interclass_overlap(X))
+        # print("Intra class overlap")
+        # print(self.intraclass_overlap(X))
         print("Total number of classes covered")
         print(self.num_classes_covered())
         print("Correct cover")
@@ -269,46 +282,59 @@ class Metrics:
         print("RAK")
         print(self.frequency_at_all_depths())
 
-class CategoricalMetrics(Metrics):
 
-    def __init__(self, decision_paths, labels, features, factors):
-        super().__init__(decision_paths, labels, features)
-        self.factors = factors
-        self.factor_set = dict([(int(f),i) for i,f in enumerate(factors[0,:])])
+class ClassificationMetrics(Metrics):
+    def __init__(self, decision_paths, labels, features, factors=None):
+        super().__init__(decision_paths, labels, features, factors)
+    
+    def correct_cover(self, rule, label, data):
+        full_cover = self.cover_dataset(rule, data)
+        correct_cover = set()
+        for x in full_cover:
+            if self.labels[x] == label:
+                correct_cover.add(x)
+        return correct_cover
 
-    def cover_point(self, rule, x):
-        for predicate in rule:
-            if predicate[0] in self.factor_set:
-                if not x[predicate[0]-1] == predicate[1]:
-                    return False
-            elif predicate[2]=='0': 
-                if x[predicate[0]-1] >= float(predicate[1]):
-                    return False
-            else:
-                if x[predicate[0]-1] < float(predicate[1]):
-                    return False
-        return True
+    def num_classes_covered(self):
+        classes_covered = set()
 
-class NumericMetrics(Metrics):
+        for i in range(len(self.labels)):
+            classes_covered.add(self.labels[i]) #class of rule
 
-    def __init__(self, decision_paths, labels, features):
-        super().__init__(decision_paths, labels, features)
+        return len(classes_covered)
+        
 
-    def cover_point(self, rule, x):
-        for predicate in rule:
-            if predicate[2]=='0': 
-                if x[predicate[0]-1] >= predicate[1]:
-                    return False
-            else:
-                if x[predicate[0]-1] < predicate[1]:
-                    return False
-        return True
+class RegressionMetrics(Metrics):
+
+    def __init__(self, decision_paths, labels, features, factors=None, bins=None):
+        super().__init__(decision_paths, labels, features, factors)
+        self.bins = bins
+        self.binned_labels = np.digitize(self.labels, self.bins)
+    
+    def correct_cover(self, rule, label, data):
+        binned_label = np.digitize([label], self.bins)
+        full_cover = self.cover_dataset(rule, data)
+        correct_cover = set()
+        for x in full_cover:
+            if self.binned_labels[x] == binned_label:
+                correct_cover.add(x)
+        return correct_cover
+
+    def num_classes_covered(self):
+        classes_covered = set()
+
+        for i in range(len(self.binned_labels)):
+            classes_covered.add(self.binned_labels[i]) #binned label of rule
+
+        return len(classes_covered)
+
 
 class Comparison:
 
     def __init__(self, original, perturbed):
         self.original = original
         self.perturbed = perturbed
+        self.num_features = len(self.original.features)
 
     def change_of_class(self):
         op = []
@@ -322,11 +348,11 @@ class Comparison:
             if c1!=c2:
                 new_op.append(c1)
                 new_op.append(c2)
-                new_op.append(get_cognitive_chunks_round(p1))
+                new_op.append(get_cognitive_chunks_round(p1, self.num_features))
                 if p1==p2:
                     new_op.append('No change')
                 else:
-                    new_op.append(get_cognitive_chunks_round(p2))
+                    new_op.append(get_cognitive_chunks_round(p2, self.num_features))
             op.append(new_op)
         op = pd.DataFrame(op, columns=['Original label','New label', 'Original nodes','Changed nodes'])
         return op
@@ -338,6 +364,7 @@ class Comparison:
 def main(dataset):
 
     # DATASET
+
     with open('../Configs/'+dataset+'.json') as config_file:
         config = json.load(config_file)
 
@@ -392,17 +419,39 @@ def main(dataset):
     perturbed_X = perturbed_dataset[:,0:config['num_features']]
     perturbed_labels = perturbed_dataset[:,config['target_col']]
 
+    # FACTORS
+
+    factors = None
     if 'factors' in config:
         factors = pd.read_csv('../Outputs/'+config['factors'], header = 0)
-        factors = factors.values
-        metrics = CategoricalMetrics(path_list[0], labels, features, factors)
-        perturbed_metrics = CategoricalMetrics(path_list[1], perturbed_labels, features, factors)
+        factors = factors.values    
+        
+
+    # BINS
+    ## Labels are binned
+
+    if config['type'] == 'regression':
+        with open ('../Outputs/'+config['label_bins'], 'rb') as fp:
+            label_bins = pickle.load(fp)
+
+    # METRICS
+
+    if config['type'] == 'classification':
+        metrics = ClassificationMetrics(path_list[0], labels, features, factors)
+        perturbed_metrics = ClassificationMetrics(path_list[1], perturbed_labels, features, factors)
+    elif config['type'] == 'regression':
+        metrics = RegressionMetrics(path_list[0], labels, features, factors, label_bins)
+        perturbed_metrics = RegressionMetrics(path_list[1], perturbed_labels, features, factors, label_bins)
     else:
-        metrics = NumericMetrics(path_list[0], labels, features)
-        perturbed_metrics = NumericMetrics(path_list[1], perturbed_labels, features)
+        print(("Type {} not supported").format(config['type']))
+        exit(0)
+
+    # DISPLAY
 
     metrics.display(X)
     perturbed_metrics.display(perturbed_X)
+
+    # COMPARISON
 
     if 'factors' not in config:
         comp = Comparison(metrics, perturbed_metrics)

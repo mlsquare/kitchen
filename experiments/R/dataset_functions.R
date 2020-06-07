@@ -1,3 +1,5 @@
+library(varhandle)
+
 dataset_source_csv <- function(dataset_name){
   switch(dataset_name, 
          adult = {return("Data/adult_headers.csv")},
@@ -31,14 +33,15 @@ dataset_col_names <- function(dataset_name){
 }
 
 dataset_preprocessed <- function(dataset_name, dataset){
-  if(dataset_name == "adult"){
+  if(dataset_name == "adult"){ ### SPACES
     dataset = dataset[dataset["workclass"] != " ?",]
     dataset = dataset[dataset["occupation"] != " ?",]
     dataset = dataset[dataset$`native-country` != " ?",]
     return(dataset)
   }
   if(dataset_name == "auto"){
-    dataset = dataset[dataset["horsepower"] != " ?",]
+    dataset = dataset[dataset["horsepower"] != "?",]
+    dataset["horsepower"] = unfactor(dataset["horsepower"])
     return(dataset)
   }
   if(dataset_name == "iris"){
