@@ -1,0 +1,28 @@
+{
+    "root": "C:/Users/shakk/Desktop/MLSquare/kitchen",
+    "program": "<python with no main file>",
+    "git": {
+        "remote": "https://github.com/mlsquare/kitchen.git",
+        "commit": "27513403a6e0313a041b7d63452fea0fe4ac08b6"
+    },
+    "email": "shakkeelahammed@gmail.com",
+    "startedAt": "2020-04-16T11:20:36.748366",
+    "host": "LAPTOP-HR3GEHA0",
+    "username": "shakk",
+    "executable": "C:\\Users\\shakk\\Anaconda2\\envs\\py36\\python.exe",
+    "os": "Windows-10-10.0.18362-SP0",
+    "python": "3.6.7",
+    "gpu": "GeForce GTX 1050",
+    "gpu_count": 1,
+    "cpu_count": 8,
+    "args": [
+        "-f",
+        "C:\\Users\\shakk\\AppData\\Roaming\\jupyter\\runtime\\kernel-6b4ba79e-98f5-4e19-956f-48d14f4f3ede.json"
+    ],
+    "state": "running",
+    "jobType": null,
+    "mode": "run",
+    "name": "multiple dropouts w/ activity regularization",
+    "project": "dert",
+    "heartbeatAt": "2020-04-16T16:44:33.623341"
+}

@@ -76,17 +76,20 @@ return_path <- function(x){
 
 
 ## Local dt and paths list setup
-final_paths <- data.frame(matrix(ncol = 1, nrow = 1000))
+final_paths <- data.frame(matrix(ncol = 1, nrow = nrow(adult_dataset)))
 
 set1 <- data.frame(LETTERS, stringsAsFactors=FALSE)
 names(set1) <- "new_col"
 set2 <- unite(data.frame(t(combn(LETTERS,2))), "new_col", sep = "")
 set3 <- unite(data.frame(t(combn(LETTERS,3))), "new_col", sep = "")
-bin_labels <- bind_rows(set1, set2, set3)
+set4 <- unite(data.frame(t(combn(LETTERS,4))), "new_col", sep = "")
+set5 <- unite(data.frame(t(combn(LETTERS,5))), "new_col", sep = "")
+bin_labels <- bind_rows(set1, set2, set3, set4, set5)
 
 global_bins <- hash()
 
-for (iter_index in 4000:6000) {
+for (iter_index in 1:nrow(adult_dataset)) {
+# for (iter_index in 1:1000) {
 	print(iter_index)
     x <- adult_dataset[iter_index, 1:15]
     x <- x[rep(seq_len(nrow(x)), 250),]
@@ -127,9 +130,12 @@ for (iter_index in 4000:6000) {
 
     path_list <- return_path(adult_dataset[iter_index,1:15])
     final_paths[iter_index, ] <- path_list
+# write.csv(final_paths, file="test_adult_paths_1000.csv")
+# label_df <- data.frame(values(global_bins))
+# write.csv(label_df, file="test_adult_bin_labels_1000.csv")
 }
 
 ## Export paths and bin details
-write.csv(final_paths, file="test_adult_paths_1000.csv")
+write.csv(final_paths, file="test_adult_paths_36000.csv")
 label_df <- data.frame(values(global_bins))
-write.csv(label_df, file="test_adult_bin_labels_1000.csv")
+write.csv(label_df, file="test_adult_bin_labels_36000.csv")
